@@ -1,0 +1,2181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EyC · Rúbrica</title>
+<meta name="description" content="Sistema interno de evaluación por rúbrica para comisiones — Evaluación y Control.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23c8892e' d='M12,2.5 L14.12,9.09 L21.04,9.06 L15.42,13.11 L17.58,19.69 L12,15.6 L6.42,19.69 L8.58,13.11 L2.96,9.06 L9.88,9.09 Z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f7fb;
+    --surface:#ffffff;
+    --surface-2:#eaf4ff;
+    --border:#dfe7f1;
+    --border-strong:rgba(18,33,59,.22);
+    --text:#12213b;
+    --text-secondary:#65748b;
+    --text-tertiary:rgba(101,116,139,.72);
+    --accent-solid:#0b86f5;
+    --accent-solid-2:#0a6fd1;
+    --accent-ink:#ffffff;
+    --accent-text:#0868c4;
+    --glow-color:rgba(11,134,245,.10);
+    --danger:#c0463f;
+    --radius-sm:8px;
+    --radius-md:12px;
+    --radius-lg:18px;
+    --ease:cubic-bezier(.4,0,.2,1);
+    --accent-gradient:linear-gradient(135deg, var(--accent-solid-2), var(--accent-solid));
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0a1120;
+      --surface:#111a2e;
+      --surface-2:#182440;
+      --border:rgba(219,231,255,.10);
+      --border-strong:rgba(219,231,255,.18);
+      --text:rgba(230,238,252,.95);
+      --text-secondary:rgba(230,238,252,.64);
+      --text-tertiary:rgba(230,238,252,.42);
+      --accent-solid:#4da3ff;
+      --accent-solid-2:#2f86e8;
+      --accent-ink:#071022;
+      --accent-text:#7fbcff;
+      --glow-color:rgba(77,163,255,.16);
+      --danger:#e2857f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0a1120;
+    --surface:#111a2e;
+    --surface-2:#182440;
+    --border:rgba(219,231,255,.10);
+    --border-strong:rgba(219,231,255,.18);
+    --text:rgba(230,238,252,.95);
+    --text-secondary:rgba(230,238,252,.64);
+    --text-tertiary:rgba(230,238,252,.42);
+    --accent-solid:#4da3ff;
+    --accent-solid-2:#2f86e8;
+    --accent-ink:#071022;
+    --accent-text:#7fbcff;
+    --glow-color:rgba(77,163,255,.16);
+    --danger:#e2857f;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;font-size:18px;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Poppins',system-ui,sans-serif;line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .2s var(--ease),color .2s var(--ease);}
+  body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 70% 45% at 15% -10%, var(--glow-color), transparent 60%);}
+  #tsparticles-bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  svg{display:block;}
+  button{font:inherit;}
+  h1,h2,h3{margin:0;}
+  p{margin:0;}
+  table{font-family:inherit;}
+
+  .skip-link{position:absolute;left:-999px;top:0;background:var(--accent-solid);color:var(--accent-ink);padding:.6rem 1rem;border-radius:0 0 8px 0;z-index:100;font-weight:600;text-decoration:none;}
+  .skip-link:focus{left:0;}
+  :focus-visible{outline:2px solid var(--accent-solid);outline-offset:2px;}
+
+  .text-gradient{background-image:var(--accent-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;}
+  @supports not (background-clip: text){
+    .text-gradient{background-image:none;color:var(--accent-text);-webkit-text-fill-color:currentColor;}
+  }
+
+  /* Header */
+  .topbar{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border);}
+  .topbar-inner{max-width:920px;margin:0 auto;padding:1rem 1.25rem .85rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .brand{display:flex;align-items:baseline;gap:.45rem;}
+  .brand-star{width:14px;height:14px;fill:url(#star-grad);flex:none;position:relative;top:-1px;}
+  .brand-title{font-size:1.14rem;font-weight:600;letter-spacing:-.01em;}
+  .brand-sub{font-size:.88rem;color:var(--text-tertiary);margin-top:.15rem;}
+  .header-right{display:flex;align-items:center;gap:.85rem;}
+  .header-counter{font-size:.88rem;color:var(--text-tertiary);white-space:nowrap;}
+  .theme-toggle{width:36px;height:36px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;transition:border-color .15s var(--ease),color .15s var(--ease);}
+  .theme-toggle:hover{border-color:var(--border-strong);color:var(--text);}
+  .theme-toggle svg{width:16px;height:16px;}
+  .theme-icon-dark{display:none;}
+  :root[data-theme="dark"] .theme-icon-light{display:none;}
+  :root[data-theme="dark"] .theme-icon-dark{display:block;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .theme-icon-light{display:none;}
+    :root:not([data-theme="light"]) .theme-icon-dark{display:block;}
+  }
+
+  .nav-tabs{max-width:920px;margin:0 auto;padding:0 1.25rem;display:flex;gap:.25rem;overflow-x:auto;scrollbar-width:none;}
+  .nav-tabs::-webkit-scrollbar{display:none;}
+  .nav-tab{flex:none;background:transparent;border:none;color:var(--text-tertiary);font-size:.98rem;font-weight:500;padding:.7rem .8rem;cursor:pointer;position:relative;transition:color .15s var(--ease);}
+  .nav-tab::after{content:'';position:absolute;left:.8rem;right:.8rem;bottom:0;height:2px;background:transparent;transition:background .15s var(--ease);}
+  .nav-tab:hover{color:var(--text);}
+  .nav-tab.is-active{color:var(--text);font-weight:600;}
+  .nav-tab.is-active::after{background:var(--accent-gradient);}
+
+  /* Layout */
+  .container{max-width:920px;margin:0 auto;padding:1.75rem 1.25rem 4rem;position:relative;z-index:1;}
+  .view{display:none !important;}
+  .view.is-active{display:block !important;animation:fadeIn .25s var(--ease);}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  .view-header{margin-bottom:1.5rem;}
+  .view-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .admin-header-actions{display:flex;gap:.6rem;flex-wrap:wrap;}
+  .view-title{font-size:1.55rem;font-weight:600;letter-spacing:-.01em;}
+  .view-desc{color:var(--text-secondary);font-size:1rem;margin-top:.3rem;max-width:56ch;}
+
+  .add-bar{display:flex;justify-content:flex-end;margin-bottom:1.1rem;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.1rem;border-radius:var(--radius-md);font-size:.98rem;font-weight:600;border:1px solid transparent;cursor:pointer;transition:filter .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease),background .15s var(--ease);white-space:nowrap;min-height:44px;}
+  .btn-primary{background-image:var(--accent-gradient);color:var(--accent-ink);}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-secondary{background:transparent;border-color:var(--border-strong);color:var(--text);}
+  .btn-secondary:hover{border-color:var(--accent-solid);color:var(--accent-text);}
+
+  .icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;transition:color .15s var(--ease);flex:none;}
+  .icon-btn:hover{color:var(--danger);}
+  .trash-ic{width:17px;height:17px;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.35rem;}
+
+  /* Comisiones — grid de tarjetas para entrar */
+  .comision-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.85rem;}
+  .comision-tile{display:flex;flex-direction:column;gap:.35rem;align-items:flex-start;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.05rem 1.15rem;cursor:pointer;transition:border-color .15s var(--ease),transform .15s var(--ease);width:100%;min-height:44px;}
+  .comision-tile:hover{border-color:var(--accent-solid);transform:translateY(-1px);}
+  .comision-tile:hover .access-cta svg{transform:translateX(2px);}
+  .comision-sigla{font-size:.84rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+  .comision-tile-nombre{font-size:1.04rem;font-weight:600;line-height:1.35;}
+  .comision-tile-meta{font-size:.84rem;color:var(--text-tertiary);}
+
+  .back-link{display:inline-flex;align-items:center;gap:.35rem;background:none;border:none;color:var(--text-secondary);font-size:.96rem;font-weight:500;cursor:pointer;padding:.5rem 0;margin-bottom:.6rem;min-height:44px;}
+  .back-link:hover{color:var(--accent-text);}
+  .comision-detail-head{margin-bottom:.3rem;}
+  .comision-detail-title{font-size:1.32rem;font-weight:600;margin-top:.15rem;}
+
+  .subtabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin:1.1rem 0 1.25rem;overflow-x:auto;scrollbar-width:none;}
+  .subtabs::-webkit-scrollbar{display:none;}
+  .subtab-btn{background:none;border:none;padding:.6rem .1rem;margin-right:1.15rem;font-size:.96rem;font-weight:500;color:var(--text-tertiary);cursor:pointer;position:relative;white-space:nowrap;min-height:40px;flex:none;}
+  .subtab-btn::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:transparent;}
+  .subtab-btn.is-active{color:var(--text);font-weight:600;}
+  .subtab-btn.is-active::after{background:var(--accent-gradient);}
+
+  .comision-roles{display:flex;flex-direction:column;gap:.9rem;max-width:420px;}
+  .role-field{display:flex;flex-direction:column;gap:.3rem;}
+  .role-label{font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-tertiary);font-weight:600;}
+
+  .field-input{background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:inherit;font-size:1rem;padding:.4rem .05rem;width:100%;border-radius:0;min-height:36px;}
+  .field-input:hover{border-bottom-color:var(--border-strong);}
+  .field-input:focus{outline:none;border-bottom-color:var(--accent-solid);}
+  .field-input::placeholder{color:var(--text-tertiary);}
+
+  /* Empty state */
+  .empty-state{padding:1.25rem 0 2rem;max-width:44ch;}
+  .empty-state h3{font-size:1.15rem;font-weight:600;margin-bottom:.4rem;}
+  .empty-state p{color:var(--text-secondary);font-size:1rem;margin-bottom:1.1rem;}
+
+  /* Talleres (por comisión) */
+  .taller-list{display:flex;flex-direction:column;}
+  .taller-row{display:flex;flex-direction:column;gap:.65rem;padding:.9rem 0;border-top:1px solid var(--border);}
+  .taller-row:first-child{border-top:none;}
+  .taller-row-fields{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+  .taller-row-fields .field-input{flex:1;min-width:150px;}
+  .taller-tipo-wrap{flex:none;width:130px;}
+  .taller-tipo-wrap select{min-height:36px;padding:.4rem 1.7rem .4rem .5rem;font-size:.9rem;}
+  .taller-oradores-field{display:flex;flex-direction:column;gap:.3rem;}
+  .taller-oradores-field .role-label{display:block;}
+  .taller-row input[type=date]{background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-secondary);font-family:inherit;font-size:.94rem;padding:.4rem .05rem;flex:none;width:148px;color-scheme:light;min-height:36px;}
+  :root[data-theme="dark"] .taller-row input[type=date]{color-scheme:dark;}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .taller-row input[type=date]{color-scheme:dark;}}
+  .taller-row input[type=date]:focus{outline:none;border-bottom-color:var(--accent-solid);}
+
+  /* Evaluar */
+  .evaluar-selectors{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:1.5rem;}
+  @media (max-width:520px){.evaluar-selectors{grid-template-columns:1fr;}}
+  .select-field{display:flex;flex-direction:column;gap:.4rem;font-size:.84rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;font-weight:600;}
+  .select-wrap{position:relative;}
+  .select-wrap select{width:100%;appearance:none;-webkit-appearance:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:1rem;text-transform:none;letter-spacing:normal;font-weight:400;padding:.65rem 2rem .65rem .75rem;cursor:pointer;min-height:44px;}
+  .select-wrap select:focus{outline:none;border-color:var(--accent-solid);}
+  .select-wrap::after{content:'';position:absolute;right:.85rem;top:50%;width:6px;height:6px;margin-top:-4px;border-right:1.5px solid var(--text-tertiary);border-bottom:1.5px solid var(--text-tertiary);transform:rotate(45deg);pointer-events:none;}
+
+  .hint-text{font-size:.98rem;color:var(--text-tertiary);}
+
+  .rubrica-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .rubrica-breadcrumb{font-size:.88rem;color:var(--text-tertiary);margin-bottom:.3rem;}
+  .rubrica-title{font-size:1.28rem;font-weight:600;}
+  .rubrica-rol{font-size:.96rem;color:var(--text-secondary);font-weight:400;}
+  .rubrica-progress{font-size:.92rem;color:var(--text-tertiary);flex:none;}
+
+  .dimension-block{margin-top:1.4rem;}
+  .dimension-block:first-of-type{margin-top:1.2rem;}
+  .dimension-title{display:flex;align-items:baseline;gap:.5rem;font-size:1.06rem;font-weight:600;margin-bottom:.15rem;}
+  .dimension-letter{font-weight:700;font-size:.94rem;}
+
+  .crit-row{display:flex;flex-direction:column;gap:.55rem;padding:.8rem 0;border-top:1px solid var(--border);}
+  .crit-row:first-of-type{border-top:none;}
+  .crit-main{display:flex;align-items:center;justify-content:space-between;gap:1rem;}
+  .crit-text{flex:1;font-size:.98rem;line-height:1.5;color:var(--text-secondary);}
+  .crit-toggle{display:flex;flex:none;border:1px solid var(--border);border-radius:999px;overflow:hidden;}
+  .crit-comment{font-size:.9rem;}
+  .seg{display:inline-flex;align-items:center;gap:.35rem;padding:.5rem .85rem;border:none;background:transparent;color:var(--text-tertiary);font-size:.9rem;font-weight:600;cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease);min-height:40px;}
+  .seg-si{border-right:1px solid var(--border);}
+  .star-ic{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.4;flex:none;}
+  .seg-si.is-active{background-image:var(--accent-gradient);color:var(--accent-ink);}
+  .seg-si.is-active .star-ic{fill:url(#star-grad-ink);stroke:none;}
+  .seg-no.is-active{background:var(--surface-2);color:var(--text);}
+
+  @media (max-width:520px){
+    .crit-main{flex-direction:column;align-items:flex-start;}
+  }
+
+  .rubrica-footer{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1.5rem;padding-top:1.1rem;border-top:1px solid var(--border);flex-wrap:wrap;}
+
+  /* Semáforo — colores de estado fijos, no siguen el acento de marca. */
+  .semaforo-row{display:flex;align-items:center;gap:.55rem;font-size:.94rem;color:var(--text-secondary);margin:.9rem 0 0;padding-top:.9rem;border-top:1px solid var(--border);}
+  .semaforo-dot{width:11px;height:11px;border-radius:50%;flex:none;display:inline-block;}
+  .semaforo-verde{background:#3fa76d;}
+  .semaforo-amarillo{background:#d9a441;}
+  .semaforo-rojo{background:#c1473f;}
+  .semaforo-gris{background:#8b8f98;}
+
+  /* Histórico */
+  .historico-list{display:flex;flex-direction:column;}
+  .historico-row{display:grid;grid-template-columns:1.2fr 1.2fr auto auto;gap:.75rem;align-items:center;padding:.7rem 0;border-top:1px solid var(--border);font-size:.96rem;cursor:pointer;background:none;border-left:none;border-right:none;text-align:left;width:100%;color:var(--text);}
+  .historico-row:first-child{border-top:none;}
+  .historico-row:hover{color:var(--accent-text);}
+  .historico-meta{color:var(--text-tertiary);font-size:.88rem;}
+  @media (max-width:640px){.historico-row{grid-template-columns:1fr;gap:.15rem;}}
+
+  /* Admin */
+  .admin-table-wrap{overflow-x:auto;}
+  .admin-table{width:100%;border-collapse:collapse;font-size:.96rem;}
+  .admin-table th{text-align:left;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-tertiary);font-weight:600;padding:.5rem .6rem;border-bottom:1px solid var(--border-strong);white-space:nowrap;}
+  .admin-table td{padding:.6rem .6rem;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .admin-table tr:last-child td{border-bottom:none;}
+  .admin-section-title{font-size:1.08rem;font-weight:600;margin:2rem 0 .9rem;}
+  .admin-section-title:first-of-type{margin-top:0;}
+  .admin-filters{display:flex;align-items:flex-end;gap:.9rem;flex-wrap:wrap;margin-bottom:1.1rem;}
+  .admin-filter-search{flex:1;min-width:200px;}
+  .admin-filter-select{flex:none;min-width:150px;}
+  .admin-search-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:1rem;text-transform:none;letter-spacing:normal;font-weight:400;padding:.65rem .75rem;min-height:44px;}
+  .admin-search-input:focus{outline:none;border-color:var(--accent-solid);}
+  .admin-search-input::placeholder{color:var(--text-tertiary);}
+  .admin-date-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:.92rem;text-transform:none;letter-spacing:normal;font-weight:400;padding:.55rem .65rem;min-height:44px;color-scheme:light;}
+  :root[data-theme="dark"] .admin-date-input{color-scheme:dark;}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .admin-date-input{color-scheme:dark;}}
+  .admin-date-input:focus{outline:none;border-color:var(--accent-solid);}
+  .admin-fase-estado{font-size:.78rem;color:var(--text-tertiary);text-transform:none;letter-spacing:normal;font-weight:400;}
+
+  /* Progreso */
+  .progress-card{border-top:1px solid var(--border);}
+  .progress-card:first-child{border-top:none;}
+  .progress-card summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;justify-content:space-between;gap:.75rem;padding:1rem 0;font-weight:600;font-size:.96rem;}
+  .progress-card summary::-webkit-details-marker{display:none;}
+  .progress-card summary::marker{content:'';}
+  .progress-sigla{font-weight:700;font-size:.92rem;margin-right:.4rem;}
+  .progress-count{font-size:.88rem;color:var(--text-tertiary);font-weight:400;flex:none;}
+  .progress-body{padding:0 0 1.1rem;}
+  .progress-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.6rem 0;border-top:1px solid var(--border);flex-wrap:wrap;}
+  .progress-row:first-child{border-top:none;}
+  .progress-taller{font-size:.96rem;color:var(--text-secondary);}
+  .progress-roles{display:flex;}
+  .role-star{width:40px;height:40px;border:none;background:transparent;display:inline-flex;align-items:center;justify-content:center;color:var(--text-tertiary);cursor:pointer;padding:0;}
+  .role-star .star-ic{width:16px;height:16px;}
+  .role-star.is-done{color:var(--accent-solid);}
+  .role-star.is-done .star-ic{fill:url(#star-grad);stroke:none;}
+  .role-star.is-empty{opacity:.25;cursor:not-allowed;}
+  .role-star:not(:disabled):hover{color:var(--accent-text);}
+
+  /* Footer */
+  .site-footer{max-width:920px;margin:0 auto;padding:2rem 1.25rem 3rem;position:relative;z-index:1;}
+  .site-footer p{font-size:.76rem;color:var(--text-tertiary);}
+
+  /* Toast */
+  .toast-wrap{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);display:flex;flex-direction:column;gap:.5rem;z-index:50;pointer-events:none;}
+  .toast{pointer-events:auto;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:.65rem 1rem;font-size:.94rem;color:var(--text);opacity:0;transform:translateY(6px);transition:opacity .2s var(--ease),transform .2s var(--ease);}
+  .toast.is-visible{opacity:1;transform:translateY(0);}
+  .toast-error{color:var(--danger);}
+  @media (max-width:560px){.toast-wrap{left:1rem;right:1rem;transform:none;}}
+
+  /* Login / sesión simulada — tarjetas de acceso estilo sgaminume.com */
+  .login-shell{min-height:calc(100vh - 64px);max-width:960px;margin:0 auto;padding:3rem 1.25rem;}
+  .login-intro{max-width:520px;margin-bottom:2rem;}
+  .login-eyebrow{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-tertiary);font-weight:600;margin-bottom:.4rem;}
+  .login-title{font-size:1.7rem;font-weight:600;letter-spacing:-.01em;}
+  .login-desc{color:var(--text-secondary);font-size:.96rem;margin-top:.5rem;line-height:1.5;}
+
+  .access-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;align-items:stretch;}
+  .access-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.45rem;display:flex;flex-direction:column;}
+  .access-icon{width:43px;height:43px;border-radius:12px;background:var(--surface-2);color:var(--accent-solid);display:flex;align-items:center;justify-content:center;margin-bottom:.85rem;flex:none;}
+  .access-icon svg{width:22px;height:22px;}
+  .access-title{font-size:1.08rem;font-weight:500;color:var(--text);margin-bottom:.35rem;}
+  .access-desc{font-size:.92rem;color:var(--text-secondary);line-height:1.5;margin-bottom:1.1rem;}
+  .access-select-field{margin-bottom:1.1rem;}
+  .access-cta{display:inline-flex;align-items:center;gap:.35rem;font-size:.86rem;font-weight:700;color:var(--accent-text);background:none;border:none;padding:0;cursor:pointer;margin-top:auto;align-self:flex-start;min-height:32px;}
+  .access-cta svg{width:15px;height:15px;transition:transform .15s var(--ease);}
+  .access-cta:hover:not(:disabled) svg{transform:translateX(2px);}
+  .access-cta:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* Insignia de sesión en el header */
+  .session-badge{display:flex;align-items:center;gap:.5rem;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:.3rem .5rem .3rem .8rem;font-size:.82rem;color:var(--text-secondary);}
+  .session-badge-role{font-weight:600;color:var(--text);}
+  .session-logout-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;flex:none;}
+  .session-logout-btn:hover{color:var(--danger);}
+  .session-logout-btn svg{width:13px;height:13px;}
+
+  /* Aprobación de cortes */
+  .aprobacion-badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;font-weight:600;padding:.35rem .7rem;border-radius:999px;border:1px solid var(--border);}
+  .aprobacion-pendiente{color:#a9762b;border-color:rgba(169,118,43,.4);}
+  .aprobacion-aprobado{color:#3fa76d;border-color:rgba(63,167,109,.4);}
+  .aprobacion-rechazado{color:var(--danger);border-color:rgba(179,65,61,.4);}
+  .aprobacion-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem;}
+  .btn-approve{background:#3fa76d;color:#06210f;}
+  .btn-approve:hover{filter:brightness(1.08);}
+  .btn-reject{background:transparent;border-color:var(--danger);color:var(--danger);}
+  .btn-reject:hover{background:rgba(179,65,61,.08);}
+  .btn-sm{padding:.4rem .75rem;font-size:.84rem;min-height:34px;}
+
+  /* Dashboard / resumen */
+  .dash-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-bottom:.5rem;}
+  .dash-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem;}
+  .dash-stat-value{font-size:1.7rem;font-weight:600;letter-spacing:-.02em;}
+  .dash-stat-label{font-size:.8rem;color:var(--text-tertiary);margin-top:.2rem;}
+
+  /* Oradores: chips + agregar */
+  .oradores-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.3rem 0;}
+  .orador-chip{display:inline-flex;align-items:center;gap:.35rem;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:.3rem .4rem .3rem .7rem;font-size:.84rem;}
+  .orador-chip-remove{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;font-size:.9rem;line-height:1;flex:none;}
+  .orador-chip-remove:hover{color:var(--danger);background:rgba(179,65,61,.1);}
+  .oradores-add-wrap{max-width:220px;}
+  .oradores-add-wrap select{font-size:.84rem;padding:.4rem 1.7rem .4rem .5rem;min-height:34px;}
+
+  /* Guardar por fila / formulario con cambios pendientes */
+  .row-save-btn{flex:none;opacity:0;pointer-events:none;transition:opacity .15s var(--ease);}
+  .row-save-btn.is-dirty{opacity:1;pointer-events:auto;}
+  .form-save-bar{display:flex;align-items:center;gap:.75rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border);}
+  .form-save-hint{font-size:.85rem;color:var(--text-tertiary);}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Saltar al contenido</a>
+<div id="tsparticles-bg" aria-hidden="true"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="star-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:var(--accent-solid-2)"/>
+      <stop offset="100%" style="stop-color:var(--accent-solid)"/>
+    </linearGradient>
+    <linearGradient id="star-grad-ink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:var(--accent-ink)"/>
+      <stop offset="100%" style="stop-color:var(--accent-ink)"/>
+    </linearGradient>
+    <symbol id="star-shape" viewBox="0 0 24 24">
+      <path d="M12,2.5 L14.12,9.09 L21.04,9.06 L15.42,13.11 L17.58,19.69 L12,15.6 L6.42,19.69 L8.58,13.11 L2.96,9.06 L9.88,9.09 Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <svg class="brand-star" aria-hidden="true"><use href="#star-shape"/></svg>
+      <div>
+        <p class="brand-title">EyC · Rúbrica</p>
+        <p class="brand-sub">Evaluación y Control — seguimiento por comisión y actividad</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <p class="header-counter" id="header-counter">0 evaluaciones registradas</p>
+      <div class="session-badge" id="session-badge" hidden>
+        <span><span class="session-badge-role" id="session-badge-role"></span><span id="session-badge-detail"></span></span>
+        <button type="button" class="session-logout-btn" id="btn-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 16l4-4-4-4M20 12H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro/oscuro">
+        <svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 12H2.1M21.9 12h-2.4M6.3 6.3 4.6 4.6M19.4 19.4l-1.7-1.7M17.7 6.3l1.7-1.7M4.6 19.4l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="nav-tabs" role="tablist" aria-label="Secciones" id="nav-tabs" hidden>
+    <button class="nav-tab is-active" role="tab" id="tab-comisiones" data-view="comisiones" aria-selected="true" aria-controls="view-comisiones">Comisiones</button>
+    <button class="nav-tab" role="tab" id="tab-progreso" data-view="progreso" aria-selected="false" aria-controls="view-progreso">Progreso</button>
+    <button class="nav-tab" role="tab" id="tab-admin" data-view="admin" aria-selected="false" aria-controls="view-admin">Monitoreo</button>
+  </nav>
+</header>
+
+<main class="container" id="main">
+
+  <section id="view-login" class="view is-active" role="tabpanel">
+    <div class="login-shell">
+      <div class="login-intro">
+        <p class="login-eyebrow">Acceso — versión de prueba</p>
+        <h1 class="login-title">¿Quién eres?</h1>
+        <p class="login-desc">Elige tu acceso para continuar. Este login es simulado: no pide contraseña.</p>
+      </div>
+
+      <div class="access-grid">
+        <div class="access-card">
+          <span class="access-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+          </span>
+          <h2 class="access-title">Evaluación y Control</h2>
+          <p class="access-desc">Evalúa las actividades de tu comisión y configura su mesa directiva.</p>
+          <label class="select-field access-select-field">Tu comisión<div class="select-wrap"><select id="login-comision-select">
+            <option value="">Selecciona tu comisión…</option>
+          </select></div></label>
+          <button type="button" class="access-cta" id="btn-login-eyc" disabled>Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+        </div>
+
+        <div class="access-card">
+          <span class="access-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18v-7"></path><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"></path><path d="M14 18v-7"></path><path d="M18 18v-7"></path><path d="M3 22h18"></path><path d="M6 18v-7"></path></svg>
+          </span>
+          <h2 class="access-title">Subsecretario/a</h2>
+          <p class="access-desc">Evalúa los cortes de cada comisión; quedan pendientes de aprobación del SG.</p>
+          <button type="button" class="access-cta" data-login-role="subse">Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+        </div>
+
+        <div class="access-card">
+          <span class="access-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
+          </span>
+          <h2 class="access-title">Secretario/a General</h2>
+          <p class="access-desc">Aprueba los cortes y monitorea todas las comisiones desde un solo panel.</p>
+          <button type="button" class="access-cta" data-login-role="sg">Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-comisiones" class="view" role="tabpanel" aria-labelledby="tab-comisiones">
+    <div class="view-header">
+      <h1 class="view-title">Comisiones</h1>
+      <p class="view-desc" id="comisiones-desc">Elige una comisión para entrar: ahí configuras su mesa directiva, sus actividades y las evaluaciones.</p>
+    </div>
+    <div id="comisiones-content"></div>
+  </section>
+
+  <section id="view-progreso" class="view" role="tabpanel" aria-labelledby="tab-progreso">
+    <div class="view-header">
+      <h1 class="view-title">Progreso</h1>
+      <p class="view-desc">Estado de las evaluaciones por comisión y actividad. Toca una estrella para entrar directo a completar una pendiente.</p>
+    </div>
+    <div id="progreso-content"></div>
+  </section>
+
+  <section id="view-admin" class="view" role="tabpanel" aria-labelledby="tab-admin">
+    <div class="view-header">
+      <div class="view-header-top">
+        <div>
+          <h1 class="view-title">Monitoreo</h1>
+          <p class="view-desc" id="admin-view-desc">Panel de Secretaría: semáforo por corte, aprobaciones pendientes, progreso de actividades y todas las evaluaciones, de todas las comisiones.</p>
+        </div>
+        <div class="admin-header-actions">
+          <button type="button" class="btn btn-primary" id="btn-seed-demo">Cargar datos de ejemplo completos</button>
+          <button type="button" class="btn btn-secondary" id="btn-reset-demo">Restablecer datos de prueba</button>
+        </div>
+      </div>
+    </div>
+    <div id="admin-content"></div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Los datos se guardan solo en este navegador (localStorage). No se envían a ningún servidor.</p>
+</footer>
+
+<div class="toast-wrap" id="toast-wrap" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  var STORAGE_KEY = 'eyc_rubrica_v3';
+  var THEME_KEY = 'eyc_rubrica_theme';
+
+  var ROLES = [
+    { key:'director', label:'Director' },
+    { key:'adjunto1', label:'Director Adjunto I' },
+    { key:'adjunto2', label:'Director Adjunto II' },
+    { key:'aprendiz', label:'Miembro Aprendiz' }
+  ];
+
+  // Lista fija de 15 comisiones — no se crean ni eliminan desde la interfaz.
+  // rolesDemo: datos de prueba, solo se usan en el primer arranque (localStorage vacío).
+  // En cuanto se guarda cualquier cambio, pasan a ser datos reales editables.
+  var FIXED_COMISIONES = [
+    { id:'ctd', nombre:'Comisión de Ciencia y Tecnología para el Desarrollo', sigla:'CTD', rolesDemo:{ director:'Ana Beatriz Vargas', adjunto1:'Luis Fernando Reyes', adjunto2:'Camila Sofía Peña', aprendiz:'Emilio Rodríguez' } },
+    { id:'pnud', nombre:'Programa de las Naciones Unidas para el Desarrollo', sigla:'PNUD', rolesDemo:{ director:'Gabriel Antonio Cruz', adjunto1:'Valentina Marte', adjunto2:'Joel Alexander Díaz', aprendiz:'Fernanda Ureña' } },
+    { id:'cop', nombre:'Conferencia de las Partes', sigla:'COP', rolesDemo:{ director:'Marcos Iván Castillo', adjunto1:'Paula Nicole Ramírez', adjunto2:'Diego Alejandro Feliz', aprendiz:'Isabel Gómez' } },
+    { id:'ams', nombre:'Asamblea Mundial de la Salud', sigla:'AMS', rolesDemo:{ director:'Carolina Beltrán', adjunto1:'Rafael Antonio Núñez', adjunto2:'Daniela Ortiz', aprendiz:'Kevin Pérez' } },
+    { id:'csnu', nombre:'Consejo de Seguridad de las Naciones Unidas', sigla:'CSNU', rolesDemo:{ director:'Andrés Felipe Guzmán', adjunto1:'Michelle Contreras', adjunto2:'Sebastián Paulino', aprendiz:'Yamilet Cabrera' } },
+    { id:'onudc', nombre:'Oficina de las Naciones Unidas contra la Droga y el Delito', sigla:'ONUDC', rolesDemo:{ director:'Jonathan Manuel Soto', adjunto1:'Estefanía Batista', adjunto2:'Raúl Espinal', aprendiz:'Nicole Abreu' } },
+    { id:'cij', nombre:'Corte Internacional de Justicia', sigla:'CIJ', rolesDemo:{ director:'Ricardo José Mercedes', adjunto1:'Laura Ximena Tavárez', adjunto2:'Christopher Lantigua', aprendiz:'Melissa Encarnación' } },
+    { id:'foro-social-drdh', nombre:'Foro Social del Consejo de Derechos Humanos', sigla:'POR DEFINIR', rolesDemo:{ director:'Ariana Sofía Familia', adjunto1:'Emmanuel De la Cruz', adjunto2:'Rosanna Beato', aprendiz:'Josué Almonte' } },
+    { id:'onudi', nombre:'Organización de las Naciones Unidas para el Desarrollo Industrial', sigla:'ONUDI', rolesDemo:{ director:'Patricia Elena Rosario', adjunto1:'Bryan Alexander Jiménez', adjunto2:'Katherine Polanco', aprendiz:'Ángel Gabriel Santana' } },
+    { id:'unctad', nombre:'Conferencia de las Naciones Unidas sobre Comercio y Desarrollo', sigla:'UNCTAD', rolesDemo:{ director:'Wendy Yohanna Rosa', adjunto1:'Miguel Ángel Bautista', adjunto2:'Scarlett Payano', aprendiz:'Jean Carlos Medina' } },
+    { id:'omt', nombre:'Organización Mundial del Turismo', sigla:'OMT', rolesDemo:{ director:'Alexandra Nicole Mota', adjunto1:'Franklin Ovalle', adjunto2:'Yaneris Corporán', aprendiz:'Elvin Rosario' } },
+    { id:'cime', nombre:'Conferencia Iberoamericana de Ministros de Educación', sigla:'CIME', rolesDemo:{ director:'Rosa Idalia Matos', adjunto1:'Cristian Manuel Adames', adjunto2:'Génesis Taveras', aprendiz:'Wilkin Estévez' } },
+    { id:'oma', nombre:'Organización Mundial de Aduanas', sigla:'OMA', rolesDemo:{ director:'Héctor Manuel Liriano', adjunto1:'Ámbar Sofía Vicioso', adjunto2:'Frandy Collado', aprendiz:'Yesenia Grullón' } },
+    { id:'crpd', nombre:'Comité sobre los Derechos de las Personas con Discapacidad', sigla:'CRPD', rolesDemo:{ director:'Mariel Cuevas', adjunto1:'Osvaldo Balbuena', adjunto2:'Carla Beatriz Henríquez', aprendiz:'Robinson Sánchez' } },
+    { id:'unesco-juventud-deporte', nombre:'UNESCO sobre Juventud y Deporte', sigla:'POR DEFINIR', rolesDemo:{ director:'Yoel Antonio Paredes', adjunto1:'Massiel Concepción', adjunto2:'Erick Manuel Duarte', aprendiz:'Luisanna Objío' } }
+  ];
+
+  // Rúbrica verbatim. No existe dimensión C en la fuente original.
+  // El criterio E1 llegó truncado en la fuente ("...creatividad,"); se conserva literal.
+  var RUBRICA = [
+    { dim:'A', titulo:'Cumplimiento y responsabilidad', items:[
+      { id:'A1', texto:'Asiste al 100% de las capacitaciones y sesiones del evento' },
+      { id:'A2', texto:'Asiste puntualmente a las capacitaciones y sesiones del evento' },
+      { id:'A3', texto:'Hace sus entregas a tiempo' }
+    ]},
+    { dim:'B', titulo:'Competencia académica y funcional', items:[
+      { id:'B1', texto:'Mostró desconocimiento sobre el procedimiento parlamentario, el tema o errores de redacción' }
+    ]},
+    { dim:'D', titulo:'Comunicación', items:[
+      { id:'D1', texto:'No se evidenciaron errores de comunicación interna/externa debido a falta de claridad, escucha y retroalimentación' }
+    ]},
+    { dim:'E', titulo:'Gestión humana', items:[
+      { id:'E1', texto:'No se evidenciaron conflictos, problemas, creatividad' }
+    ]},
+    { dim:'F', titulo:'Ética, inclusión e innovación', items:[
+      { id:'F1', texto:'Se evidencia una conducta ética, transparente e inclusión, compromiso social, iniciativa, aprendizaje e innovación' }
+    ]}
+  ];
+  var TOTAL_CRIT = RUBRICA.reduce(function(n,d){ return n + d.items.length; }, 0);
+  var RUBRICA_FLAT_IDS = RUBRICA.reduce(function(acc,d){ return acc.concat(d.items.map(function(i){ return i.id; })); }, []);
+
+  // Puntos de control formales (independientes de los talleres), con su peso
+  // de referencia. Usan la misma rúbrica que las evaluaciones por taller.
+  var CORTES = [
+    { key:'corte1', label:'Corte 1', desc:'Preparación e incorporación', peso:25 },
+    { key:'corte2', label:'Corte 2', desc:'Desempeño al cierre del Día 2', peso:25 },
+    { key:'final', label:'Evaluación Final', desc:'Desempeño integral', peso:50 }
+  ];
+
+  var TIPOS_ACTIVIDAD = [
+    { key:'taller', label:'Taller' },
+    { key:'encuentro', label:'Encuentro' },
+    { key:'reunion', label:'Reunión' },
+    { key:'otro', label:'Otro' }
+  ];
+
+  var state = loadState();
+
+  // Sesión simulada (sin contraseña): quién entró y con qué rol.
+  // role: 'eyc' (atado a una comisión), 'subse' o 'sg' (globales).
+  var SESSION_KEY = 'eyc_rubrica_session';
+  var session = loadSession();
+
+  // Cambios sin guardar por formulario (mesa directiva, una actividad puntual,
+  // evaluar, cortes...) — bloquean la navegación hasta confirmar.
+  var dirtyForms = {};
+
+  // Navegación dentro de "Comisiones": qué comisión está abierta y en qué sub-pestaña.
+  var comisionDetailId = null;
+  var comisionDetailTab = 'mesa';
+  var selTaller = '';
+  var selRol = '';
+  var selCorteTipo = '';
+  var currentRespuestas = {};
+  var currentComentarios = {};
+
+  // Filtros de la sección "Rendimiento" en Admin (persisten mientras dura la sesión).
+  var adminBusqueda = '';
+  var adminFiltroPuntaje = 'todos';
+  var adminFiltroSemaforo = 'todos';
+
+  // Filtros del Histórico de la comisión abierta — se reinician al entrar a otra comisión.
+  var historicoBusqueda = '';
+  var historicoFiltroPuntaje = 'todos';
+  var historicoFiltroSemaforo = 'todos';
+  var particlesContainer = null;
+
+  function loadState(){
+    var saved = { comisiones:[], talleres:[], evaluaciones:[], cortes:[], configCortes:{} };
+    var raw = null;
+    try{
+      raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        saved.comisiones = parsed.comisiones || [];
+        saved.talleres = parsed.talleres || [];
+        saved.evaluaciones = parsed.evaluaciones || [];
+        saved.cortes = parsed.cortes || [];
+        saved.configCortes = parsed.configCortes || {};
+      }
+    }catch(e){
+      console.warn('No se pudo leer el almacenamiento local', e);
+    }
+    // Primer arranque (nada guardado todavía): se precargan los nombres de
+    // prueba. En cuanto se guarda cualquier cambio, dejan de usarse — a
+    // partir de ahí manda siempre lo que haya en localStorage.
+    var isFirstRun = !raw;
+    var comisiones = FIXED_COMISIONES.map(function(fc){
+      var match = saved.comisiones.find(function(c){ return c.id === fc.id; });
+      var savedRoles = (match && match.roles) || {};
+      var demo = isFirstRun ? (fc.rolesDemo || {}) : {};
+      return {
+        id: fc.id,
+        nombre: fc.nombre,
+        sigla: fc.sigla,
+        roles: {
+          director: savedRoles.director || demo.director || '',
+          adjunto1: savedRoles.adjunto1 || demo.adjunto1 || '',
+          adjunto2: savedRoles.adjunto2 || demo.adjunto2 || '',
+          aprendiz: savedRoles.aprendiz || demo.aprendiz || ''
+        }
+      };
+    });
+    var configCortes = {};
+    CORTES.forEach(function(c){
+      configCortes[c.key] = saved.configCortes[c.key] || { inicio: '' };
+    });
+    return { comisiones: comisiones, talleres: saved.talleres, evaluaciones: saved.evaluaciones, cortes: saved.cortes, configCortes: configCortes };
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){
+      toast('No se pudo guardar. Verifica el espacio de almacenamiento del navegador.', 'error');
+    }
+  }
+
+  function uid(prefix){
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+
+  /* ---------- Sesión / roles ---------- */
+  function loadSession(){
+    try{
+      var raw = localStorage.getItem(SESSION_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+  function saveSession(){
+    try{ localStorage.setItem(SESSION_KEY, JSON.stringify(session)); }catch(e){}
+  }
+  function isEyc(){ return !!session && session.role === 'eyc'; }
+  function isSubse(){ return !!session && session.role === 'subse'; }
+  function isSg(){ return !!session && session.role === 'sg'; }
+  function isSecretaria(){ return isSubse() || isSg(); }
+  // Solo Subsecretaría/SG evalúan cortes; el EyC solo evalúa por actividad.
+  function canSeeCortes(){ return isSecretaria(); }
+  // Solo la Secretaría (Subse o SG) llega al panel de Monitoreo.
+  function canSeeAdmin(){ return isSecretaria(); }
+  // El corte que evalúa el Subsecretario queda pendiente hasta que el SG lo apruebe.
+  function canApprove(){ return isSg(); }
+
+  function roleLabel(role){
+    return role === 'eyc' ? 'Evaluación y Control' : role === 'subse' ? 'Subsecretario/a' : role === 'sg' ? 'Secretario/a General' : '';
+  }
+
+  /* ---------- Cambios sin guardar ---------- */
+  function markDirty(formId){
+    dirtyForms[formId] = true;
+  }
+  function clearDirty(formId){
+    delete dirtyForms[formId];
+  }
+  function hasAnyDirty(){
+    return Object.keys(dirtyForms).length > 0;
+  }
+  // Se llama antes de cualquier navegación (cambiar de pestaña, comisión,
+  // sub-pestaña o cerrar sesión). Si hay cambios sin guardar, confirma con
+  // el usuario; si acepta descartarlos, limpia el estado "sucio" y deja
+  // continuar la navegación — si no, la cancela.
+  function confirmDiscardIfDirty(){
+    if(!hasAnyDirty()) return true;
+    var ok = confirm('Tienes cambios sin guardar en esta sección. Si continúas se perderán. ¿Deseas continuar sin guardar?');
+    if(ok) dirtyForms = {};
+    return ok;
+  }
+
+  function escapeHTML(str){
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function(s){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s];
+    });
+  }
+
+  function tipoLabel(key){
+    var t = TIPOS_ACTIVIDAD.find(function(x){ return x.key === key; });
+    return t ? t.label : TIPOS_ACTIVIDAD[0].label;
+  }
+
+  function currentComision(){
+    return state.comisiones.find(function(c){ return c.id === comisionDetailId; });
+  }
+
+  function formatFecha(iso){
+    try{
+      var d = new Date(iso);
+      return d.toLocaleString('es-DO', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    }catch(e){ return iso; }
+  }
+
+  function toast(msg, type){
+    type = type || 'success';
+    var wrap = document.getElementById('toast-wrap');
+    var el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : '');
+    el.textContent = msg;
+    wrap.appendChild(el);
+    requestAnimationFrame(function(){ el.classList.add('is-visible'); });
+    setTimeout(function(){
+      el.classList.remove('is-visible');
+      setTimeout(function(){ el.remove(); }, 200);
+    }, 2600);
+  }
+
+  function updateHeaderCounter(){
+    var nTaller = state.evaluaciones.filter(function(e){ return Object.keys(e.respuestas || {}).length > 0; }).length;
+    var nCorte = state.cortes.filter(function(c){ return Object.keys(c.respuestas || {}).length > 0; }).length;
+    var n = nTaller + nCorte;
+    document.getElementById('header-counter').textContent = n === 1 ? '1 evaluación registrada' : (n + ' evaluaciones registradas');
+  }
+
+  // Semáforo automático a partir de las respuestas de una evaluación (taller o corte):
+  // 0 respuestas = rojo (no evaluado). Mayoría de "No" = rojo (incumplimiento total).
+  // Algún "No" o preguntas sin responder = amarillo (falta parcial). Todo respondido y
+  // en "Sí" = verde.
+  function semaforoInfo(respuestas){
+    respuestas = respuestas || {};
+    var claves = Object.keys(respuestas);
+    var respondidos = claves.length;
+    var noCount = claves.filter(function(k){ return respuestas[k] === 'no'; }).length;
+    if(respondidos === 0) return { key:'rojo', label:'Incumplimiento total — no evaluado' };
+    if(noCount >= Math.ceil(TOTAL_CRIT / 2)) return { key:'rojo', label:'Incumplimiento total' };
+    if(noCount > 0 || respondidos < TOTAL_CRIT) return { key:'amarillo', label:'Falta parcial' };
+    return { key:'verde', label:'Cumple' };
+  }
+
+  function semaforoRowInnerHTML(respuestas, corteKey){
+    var estado = corteKey ? semaforoInfoCorte(corteKey, respuestas) : semaforoInfo(respuestas);
+    return '<span class="semaforo-dot semaforo-' + estado.key + '" aria-hidden="true"></span><span>' + escapeHTML(estado.label) + '</span>';
+  }
+
+  // Los cortes son fases con fecha de inicio configurable (ver Admin). Antes
+  // de que empiece su fase, "no evaluado" no debe leerse como incumplimiento
+  // — simplemente todavía no toca. Solo se aplica cuando NO hay ninguna
+  // respuesta; si ya hay algo evaluado (aunque sea temprano), se muestra su
+  // color real.
+  function corteFaseActiva(corteKey){
+    var cfg = state.configCortes && state.configCortes[corteKey];
+    if(!cfg || !cfg.inicio) return true;
+    var hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    var inicio = new Date(cfg.inicio + 'T00:00:00');
+    return hoy >= inicio;
+  }
+
+  function semaforoInfoCorte(corteKey, respuestas){
+    var claves = Object.keys(respuestas || {});
+    if(claves.length === 0 && !corteFaseActiva(corteKey)){
+      return { key:'gris', label:'Fase aún no iniciada' };
+    }
+    return semaforoInfo(respuestas);
+  }
+
+  /* ---------- Tema ---------- */
+  function isDarkActive(){
+    var attr = document.documentElement.getAttribute('data-theme');
+    if(attr) return attr === 'dark';
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+
+  function initTheme(){
+    var saved = null;
+    try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+    if(saved === 'light' || saved === 'dark'){
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+    document.getElementById('theme-toggle').addEventListener('click', function(){
+      var next = isDarkActive() ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
+      loadParticles();
+    });
+  }
+
+  /* ---------- Fondo de estrellas (tsParticles, vía CDN) ----------
+     Puntos pequeños, pocos y tenues — no la forma "star" de la librería,
+     que a tamaño chico se lee como el emoji ⭐ y satura la vista. La idea
+     es una textura de fondo casi imperceptible, no un protagonista.
+     Si no hay conexión y la librería no carga, se omite en silencio:
+     el resto de la app no depende de esto para funcionar. */
+  function loadParticles(){
+    if(!window.tsParticles) return;
+    if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var dark = isDarkActive();
+    var colors = dark ? ['#f2c265', '#ffffff'] : ['#9c661c', '#c8892e'];
+    var opts = {
+      fullScreen: { enable: false },
+      background: { color: { value: 'transparent' } },
+      fpsLimit: 60,
+      detectRetina: true,
+      particles: {
+        number: { value: 24, density: { enable: true, area: 1400 } },
+        color: { value: colors },
+        shape: { type: 'circle' },
+        opacity: { value: { min: 0.08, max: 0.4 }, animation: { enable: true, speed: 0.3, sync: false } },
+        size: { value: { min: 0.6, max: 1.5 } },
+        links: { enable: false },
+        move: { enable: true, speed: 0.08, direction: 'none', random: true, straight: false, outModes: { default: 'out' } }
+      }
+    };
+    if(particlesContainer){ particlesContainer.destroy(); particlesContainer = null; }
+    window.tsParticles.load('tsparticles-bg', opts).then(function(c){ particlesContainer = c; }).catch(function(){});
+  }
+
+  /* ---------- Navegación superior ---------- */
+  function switchView(view){
+    if(view === 'admin' && !canSeeAdmin()) view = 'comisiones';
+    var sections = document.querySelectorAll('.view');
+    for(var i=0;i<sections.length;i++) sections[i].classList.remove('is-active');
+    var tabs = document.querySelectorAll('.nav-tab');
+    for(var j=0;j<tabs.length;j++){
+      tabs[j].classList.remove('is-active');
+      tabs[j].setAttribute('aria-selected', tabs[j].dataset.view === view ? 'true' : 'false');
+    }
+    document.getElementById('view-' + view).classList.add('is-active');
+    document.querySelector('.nav-tab[data-view="' + view + '"]').classList.add('is-active');
+    window.scrollTo({ top:0, behavior:'smooth' });
+    if(view === 'comisiones') renderComisiones();
+    if(view === 'progreso') renderProgreso();
+    if(view === 'admin') renderAdmin();
+  }
+
+  /* ---------- Login / logout ---------- */
+  function populateLoginComisiones(){
+    var sel = document.getElementById('login-comision-select');
+    if(!sel) return;
+    sel.innerHTML = '<option value="">Selecciona tu comisión…</option>' + state.comisiones.map(function(c){
+      return '<option value="' + c.id + '">' + escapeHTML(c.sigla) + ' — ' + escapeHTML(c.nombre) + '</option>';
+    }).join('');
+  }
+
+  function applyRoleVisibility(){
+    var adminTab = document.getElementById('tab-admin');
+    if(adminTab) adminTab.hidden = !canSeeAdmin();
+  }
+
+  function doLogin(role, comisionId){
+    session = { role: role, comisionId: comisionId || null };
+    saveSession();
+    enterApp();
+  }
+
+  function doLogout(){
+    if(!confirmDiscardIfDirty()) return;
+    session = null;
+    try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+    comisionDetailId = null;
+    comisionDetailTab = 'mesa';
+    var sections = document.querySelectorAll('.view');
+    for(var i=0;i<sections.length;i++) sections[i].classList.remove('is-active');
+    document.getElementById('view-login').classList.add('is-active');
+    document.getElementById('nav-tabs').hidden = true;
+    document.getElementById('session-badge').hidden = true;
+    populateLoginComisiones();
+    var sel = document.getElementById('login-comision-select');
+    if(sel) sel.value = '';
+    var btnEyc = document.getElementById('btn-login-eyc');
+    if(btnEyc) btnEyc.disabled = true;
+  }
+
+  function enterApp(){
+    document.getElementById('view-login').classList.remove('is-active');
+    document.getElementById('nav-tabs').hidden = false;
+    applyRoleVisibility();
+    var badge = document.getElementById('session-badge');
+    badge.hidden = false;
+    document.getElementById('session-badge-role').textContent = roleLabel(session.role);
+    var detailEl = document.getElementById('session-badge-detail');
+    if(session.role === 'eyc'){
+      var com = state.comisiones.find(function(c){ return c.id === session.comisionId; });
+      detailEl.textContent = com ? ' — ' + com.sigla : '';
+    }else{
+      detailEl.textContent = '';
+    }
+    comisionDetailId = isEyc() ? session.comisionId : null;
+    comisionDetailTab = canSeeCortes() ? comisionDetailTab : 'mesa';
+    switchView(isSecretaria() ? 'admin' : 'comisiones');
+  }
+
+  function bindLoginEvents(){
+    var sel = document.getElementById('login-comision-select');
+    var btnEyc = document.getElementById('btn-login-eyc');
+    sel.addEventListener('change', function(e){ btnEyc.disabled = !e.target.value; });
+    btnEyc.addEventListener('click', function(){
+      if(!sel.value) return;
+      doLogin('eyc', sel.value);
+    });
+    var roleButtons = document.querySelectorAll('[data-login-role]');
+    for(var i=0;i<roleButtons.length;i++){
+      roleButtons[i].addEventListener('click', function(e){ doLogin(e.currentTarget.dataset.loginRole, null); });
+    }
+    document.getElementById('btn-logout').addEventListener('click', doLogout);
+  }
+
+  function emptyState(title, desc, view, cta){
+    return '<div class="empty-state">' +
+      '<h3>' + escapeHTML(title) + '</h3>' +
+      '<p>' + escapeHTML(desc) + '</p>' +
+      (view ? '<button type="button" class="btn btn-secondary" data-goto="' + view + '">' + escapeHTML(cta) + '</button>' : '') +
+      '</div>';
+  }
+
+  function emptyStateSubtab(title, desc, subtab, cta){
+    return '<div class="empty-state">' +
+      '<h3>' + escapeHTML(title) + '</h3>' +
+      '<p>' + escapeHTML(desc) + '</p>' +
+      '<button type="button" class="btn btn-secondary" data-goto-subtab="' + subtab + '">' + escapeHTML(cta) + '</button>' +
+      '</div>';
+  }
+
+  /* ---------- Comisiones ---------- */
+  function renderComisiones(){
+    var el = document.getElementById('comisiones-content');
+    var desc = document.getElementById('comisiones-desc');
+    // El EyC está atado a la comisión de su sesión: no hay grilla, entra
+    // directo y no puede "volver" a ver las demás.
+    if(isEyc() && !comisionDetailId) comisionDetailId = session.comisionId;
+    if(comisionDetailId){
+      var com = currentComision();
+      if(!com){
+        comisionDetailId = null;
+        if(!isEyc()){ renderComisiones(); return; }
+        el.innerHTML = emptyState('Comisión no encontrada', 'Tu sesión no corresponde a ninguna comisión válida. Cierra sesión e inténtalo de nuevo.');
+        return;
+      }
+      desc.textContent = 'Mesa directiva, actividades, evaluaciones e histórico de esta comisión.';
+      el.innerHTML = comisionDetailShellHTML(com);
+      renderComisionSubtabContent(com);
+      return;
+    }
+    desc.textContent = 'Elige una comisión para entrar: ahí configuras su mesa directiva, sus actividades y las evaluaciones.';
+    el.innerHTML = '<div class="comision-grid">' + state.comisiones.map(comisionTileHTML).join('') + '</div>';
+  }
+
+  function comisionTileHTML(com){
+    var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); }).length;
+    return '<button type="button" class="comision-tile" data-id="' + com.id + '">' +
+      '<span class="access-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18v-7"></path><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"></path><path d="M14 18v-7"></path><path d="M18 18v-7"></path><path d="M3 22h18"></path><path d="M6 18v-7"></path></svg></span>' +
+      '<span class="comision-sigla text-gradient">' + escapeHTML(com.sigla) + '</span>' +
+      '<span class="comision-tile-nombre">' + escapeHTML(com.nombre) + '</span>' +
+      '<span class="comision-tile-meta">' + asignados + '/4 roles asignados</span>' +
+      '<span class="access-cta comision-tile-cta">Abrir <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span>' +
+      '</button>';
+  }
+
+  function comisionDetailShellHTML(com){
+    var tabs = [
+      { key:'mesa', label:'Mesa directiva' },
+      { key:'talleres', label:'Actividades' },
+      { key:'evaluar', label:'Evaluar' },
+      { key:'historico', label:'Histórico' }
+    ];
+    if(canSeeCortes()){
+      tabs.splice(3, 0, { key:'cortes', label:'Cortes' });
+    }
+    var backLink = isEyc() ? '' : '<button type="button" class="back-link" id="btn-comision-back">&larr; Todas las comisiones</button>';
+    return backLink +
+      '<div class="comision-detail-head">' +
+        '<span class="comision-sigla text-gradient">' + escapeHTML(com.sigla) + '</span>' +
+        '<h2 class="comision-detail-title">' + escapeHTML(com.nombre) + '</h2>' +
+      '</div>' +
+      '<nav class="subtabs" role="tablist" aria-label="Secciones de la comisión">' +
+        tabs.map(function(tb){
+          return '<button type="button" class="subtab-btn' + (comisionDetailTab === tb.key ? ' is-active' : '') + '" data-subtab="' + tb.key + '" role="tab" aria-selected="' + (comisionDetailTab === tb.key) + '">' + tb.label + '</button>';
+        }).join('') +
+      '</nav>' +
+      '<div id="comision-subtab-content" class="card"></div>';
+  }
+
+  function renderComisionSubtabContent(com){
+    var container = document.getElementById('comision-subtab-content');
+    if(!container) return;
+    if(comisionDetailTab === 'cortes' && !canSeeCortes()) comisionDetailTab = 'mesa';
+    if(comisionDetailTab === 'mesa'){
+      container.innerHTML = mesaHTML(com);
+    }else if(comisionDetailTab === 'talleres'){
+      container.innerHTML = talleresSubtabHTML(com);
+    }else if(comisionDetailTab === 'evaluar'){
+      mountEvaluarSubtab(com, container);
+    }else if(comisionDetailTab === 'cortes'){
+      mountCortesSubtab(com, container);
+    }else if(comisionDetailTab === 'historico'){
+      container.innerHTML = historicoHTML(com);
+      bindHistoricoEvents(com);
+    }
+  }
+
+  function mesaHTML(com){
+    var fields = ROLES.map(function(r){
+      return '<label class="role-field">' +
+        '<span class="role-label">' + escapeHTML(r.label) + '</span>' +
+        '<input type="text" class="field-input" data-role="' + r.key + '" value="' + escapeHTML(com.roles[r.key] || '') + '" placeholder="Nombre completo">' +
+        '</label>';
+    }).join('');
+    return '<div class="comision-roles">' + fields + '</div>' +
+      '<div class="form-save-bar">' +
+        '<button type="button" class="btn btn-primary row-save-btn" data-action="save-mesa">Guardar mesa directiva</button>' +
+        '<span class="form-save-hint">Los cambios no se guardan hasta que toques "Guardar".</span>' +
+      '</div>';
+  }
+
+  function talleresSubtabHTML(com){
+    var misTalleres = state.talleres.filter(function(t){ return t.comisionId === com.id; });
+    var addBar = '<div class="add-bar"><button type="button" class="btn btn-primary" id="btn-add-taller">+ Nueva actividad</button></div>';
+    if(misTalleres.length === 0){
+      return addBar + emptyState('Aún no hay actividades', 'Agrega la primera actividad de esta comisión (taller, encuentro, reunión, etc.).');
+    }
+    return addBar + '<div class="taller-list">' + misTalleres.map(function(t){ return tallerRowHTML(t, com); }).join('') + '</div>';
+  }
+
+  function oradoresKeys(taller){
+    return Array.isArray(taller.oradores) ? taller.oradores : [];
+  }
+
+  function oradoresLabel(com, taller){
+    var nombres = oradoresKeys(taller).map(function(k){ return (com.roles[k] || '').trim(); }).filter(Boolean);
+    return nombres.join(', ');
+  }
+
+  // Widget de oradores: chips de los ya elegidos (con quitar) + un select
+  // para agregar uno más de los que falten. La selección "en curso" vive en
+  // data-selected del contenedor hasta que se pulsa "Guardar actividad".
+  function oradoresWidgetHTML(com, selectedKeys){
+    var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
+    var chips = selectedKeys.map(function(k){
+      var r = ROLES.find(function(x){ return x.key === k; });
+      var nombre = (com.roles[k] || '').trim();
+      if(!nombre) return '';
+      return '<span class="orador-chip">' + escapeHTML(nombre) +
+        ' <span class="historico-meta">— ' + escapeHTML(r ? r.label : k) + '</span>' +
+        '<button type="button" class="orador-chip-remove" data-remove-orador="' + k + '" aria-label="Quitar ' + escapeHTML(nombre) + '">×</button></span>';
+    }).join('') || '<span class="hint-text">Ninguno seleccionado.</span>';
+    var restantes = asignados.filter(function(r){ return selectedKeys.indexOf(r.key) === -1; });
+    var addSelect = restantes.length === 0 ? '' :
+      '<div class="select-wrap oradores-add-wrap"><select class="oradores-add-select" aria-label="Agregar orador">' +
+        '<option value="">+ Agregar orador…</option>' +
+        restantes.map(function(r){ return '<option value="' + r.key + '">' + escapeHTML(r.label) + ' — ' + escapeHTML(com.roles[r.key]) + '</option>'; }).join('') +
+      '</select></div>';
+    return '<div class="oradores-chips">' + chips + '</div>' + addSelect;
+  }
+
+  function tallerRowHTML(t, com){
+    var tipoActual = t.tipo || 'taller';
+    var tipoOptions = TIPOS_ACTIVIDAD.map(function(ti){
+      return '<option value="' + ti.key + '"' + (ti.key === tipoActual ? ' selected' : '') + '>' + escapeHTML(ti.label) + '</option>';
+    }).join('');
+    var oradoresSeleccionados = oradoresKeys(t);
+    return '<div class="taller-row" data-id="' + t.id + '">' +
+      '<div class="taller-row-fields">' +
+        '<div class="select-wrap taller-tipo-wrap"><select data-field="tipo" aria-label="Tipo de actividad">' + tipoOptions + '</select></div>' +
+        '<input type="text" class="field-input" data-field="nombre" value="' + escapeHTML(t.nombre) + '" placeholder="Nombre o descripción de la actividad" aria-label="Nombre de la actividad">' +
+        '<input type="date" data-field="fecha" value="' + escapeHTML(t.fecha || '') + '" aria-label="Fecha de la actividad">' +
+        '<button type="button" class="icon-btn" data-action="del-taller" title="Eliminar actividad" aria-label="Eliminar actividad">' +
+          '<svg viewBox="0 0 24 24" class="trash-ic" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="taller-oradores-field" data-oradores-holder data-selected="' + escapeHTML(JSON.stringify(oradoresSeleccionados)) + '">' +
+        '<span class="role-label">Orador(es)</span>' +
+        oradoresWidgetHTML(com, oradoresSeleccionados) +
+      '</div>' +
+      '<div class="form-save-bar">' +
+        '<button type="button" class="btn btn-primary row-save-btn" data-action="save-taller">Guardar actividad</button>' +
+        '<span class="form-save-hint">Los cambios no se guardan hasta que toques "Guardar".</span>' +
+      '</div>' +
+      '</div>';
+  }
+
+  function critRowHTML(item, respuestas, comentarios){
+    var val = respuestas[item.id];
+    var comentario = (comentarios && comentarios[item.id]) || '';
+    return '<div class="crit-row">' +
+      '<div class="crit-main">' +
+        '<p class="crit-text">' + escapeHTML(item.texto) + '</p>' +
+        '<div class="crit-toggle" role="group" aria-label="Respuesta">' +
+          '<button type="button" class="seg seg-si' + (val === 'si' ? ' is-active' : '') + '" data-crit="' + item.id + '" data-val="si" aria-pressed="' + (val === 'si') + '">' +
+            '<svg class="star-ic" aria-hidden="true"><use href="#star-shape"/></svg><span>Sí</span>' +
+          '</button>' +
+          '<button type="button" class="seg seg-no' + (val === 'no' ? ' is-active' : '') + '" data-crit="' + item.id + '" data-val="no" aria-pressed="' + (val === 'no') + '">' +
+            '<span>No</span>' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+      '<input type="text" class="field-input crit-comment" data-comment="' + item.id + '" value="' + escapeHTML(comentario) + '" placeholder="Comentario (opcional)" aria-label="Comentario sobre este criterio">' +
+      '</div>';
+  }
+
+  function dimensionesHTML(respuestas, comentarios){
+    return RUBRICA.map(function(dim){
+      return '<section class="dimension-block">' +
+        '<h2 class="dimension-title"><span class="dimension-letter text-gradient">' + dim.dim + '</span>' + escapeHTML(dim.titulo) + '</h2>' +
+        dim.items.map(function(item){ return critRowHTML(item, respuestas, comentarios); }).join('') +
+        '</section>';
+    }).join('');
+  }
+
+  function bindCritToggles(container, formId){
+    var btns = container.querySelectorAll('.seg');
+    for(var i=0;i<btns.length;i++){
+      btns[i].addEventListener('click', function(e){
+        var btn = e.currentTarget;
+        var critId = btn.dataset.crit;
+        var val = btn.dataset.val;
+        if(currentRespuestas[critId] === val){
+          delete currentRespuestas[critId];
+        }else{
+          currentRespuestas[critId] = val;
+        }
+        if(formId) markDirty(formId);
+        renderRubricaAnswersOnly();
+      });
+    }
+    var comentarioInputs = container.querySelectorAll('.crit-comment');
+    for(var j=0;j<comentarioInputs.length;j++){
+      comentarioInputs[j].addEventListener('input', function(e){
+        currentComentarios[e.target.dataset.comment] = e.target.value;
+        if(formId) markDirty(formId);
+      });
+    }
+  }
+
+  function mountEvaluarSubtab(com, container){
+    var misTalleres = state.talleres.filter(function(t){ return t.comisionId === com.id; });
+    if(misTalleres.length === 0){
+      container.innerHTML = emptyStateSubtab('Primero agrega una actividad', 'Necesitas al menos una actividad de esta comisión para poder evaluar.', 'talleres', 'Ir a Actividades');
+      return;
+    }
+    var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
+    if(asignados.length === 0){
+      container.innerHTML = emptyStateSubtab('Primero asigna la mesa directiva', 'Necesitas al menos un miembro con nombre asignado para poder evaluar.', 'mesa', 'Ir a Mesa directiva');
+      return;
+    }
+    if(!selTaller || !misTalleres.find(function(t){ return t.id === selTaller; })) selTaller = misTalleres[0].id;
+    if(!selRol || !asignados.find(function(r){ return r.key === selRol; })) selRol = asignados[0].key;
+
+    container.innerHTML =
+      '<div class="evaluar-selectors">' +
+        '<label class="select-field">Actividad<div class="select-wrap"><select id="sel-taller">' +
+          misTalleres.map(function(t){ return '<option value="' + t.id + '"' + (t.id === selTaller ? ' selected' : '') + '>' + escapeHTML(tipoLabel(t.tipo)) + ' — ' + escapeHTML(t.nombre) + '</option>'; }).join('') +
+        '</select></div></label>' +
+        '<label class="select-field">Miembro de la mesa<div class="select-wrap"><select id="sel-rol">' +
+          asignados.map(function(r){ return '<option value="' + r.key + '"' + (r.key === selRol ? ' selected' : '') + '>' + escapeHTML(r.label) + ' — ' + escapeHTML(com.roles[r.key]) + '</option>'; }).join('') +
+        '</select></div></label>' +
+      '</div>' +
+      '<div id="rubrica-container"></div>';
+
+    document.getElementById('sel-taller').addEventListener('change', function(e){
+      var prev = selTaller;
+      if(!confirmDiscardIfDirty()){ e.target.value = prev; return; }
+      selTaller = e.target.value;
+      renderRubrica(com);
+    });
+    document.getElementById('sel-rol').addEventListener('change', function(e){
+      var prev = selRol;
+      if(!confirmDiscardIfDirty()){ e.target.value = prev; return; }
+      selRol = e.target.value;
+      renderRubrica(com);
+    });
+
+    renderRubrica(com);
+  }
+
+  function renderRubrica(com){
+    var container = document.getElementById('rubrica-container');
+    if(!container) return;
+    var taller = state.talleres.find(function(t){ return t.id === selTaller && t.comisionId === com.id; });
+    if(!taller || !selRol || !(com.roles[selRol] || '').trim()){
+      container.innerHTML = '<p class="hint-text">Selecciona una actividad y un miembro con nombre asignado para comenzar.</p>';
+      return;
+    }
+    var existing = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === selTaller && e.rol === selRol; });
+    currentRespuestas = existing ? Object.assign({}, existing.respuestas) : {};
+    currentComentarios = existing ? Object.assign({}, existing.comentarios || {}) : {};
+    var respondidos = Object.keys(currentRespuestas).length;
+    var rolLabel = ROLES.find(function(r){ return r.key === selRol; }).label;
+
+    container.innerHTML =
+      '<div class="rubrica-head">' +
+        '<div>' +
+          '<p class="rubrica-breadcrumb">' + escapeHTML(tipoLabel(taller.tipo)) + ' — ' + escapeHTML(taller.nombre) + (oradoresLabel(com, taller) ? ' · Orador(es): ' + escapeHTML(oradoresLabel(com, taller)) : '') + '</p>' +
+          '<h2 class="rubrica-title">' + escapeHTML(com.roles[selRol]) + ' <span class="rubrica-rol">— ' + escapeHTML(rolLabel) + '</span></h2>' +
+        '</div>' +
+        '<span class="rubrica-progress">' + respondidos + '/' + TOTAL_CRIT + ' respondidos</span>' +
+      '</div>' +
+      dimensionesHTML(currentRespuestas, currentComentarios) +
+      '<div class="rubrica-footer">' +
+        '<span class="hint-text">' + (existing ? 'Última actualización: ' + formatFecha(existing.actualizado) : 'Aún no se ha guardado esta evaluación.') + '</span>' +
+        '<button type="button" class="btn btn-primary" id="btn-guardar-evaluacion">Guardar evaluación</button>' +
+      '</div>';
+
+    container.querySelector('#btn-guardar-evaluacion').addEventListener('click', function(){ handleGuardarEvaluacion(com); });
+    bindCritToggles(container, 'evaluar');
+  }
+
+  function renderRubricaAnswersOnly(){
+    var container = document.getElementById('rubrica-container');
+    if(!container) return;
+    var respondidos = Object.keys(currentRespuestas).length;
+    var progressEl = container.querySelector('.rubrica-progress');
+    if(progressEl) progressEl.textContent = respondidos + '/' + TOTAL_CRIT + ' respondidos';
+    var semaforoRow = container.querySelector('.semaforo-row');
+    if(semaforoRow) semaforoRow.innerHTML = semaforoRowInnerHTML(currentRespuestas, selCorteTipo);
+    var btns = container.querySelectorAll('.seg');
+    for(var i=0;i<btns.length;i++){
+      var btn = btns[i];
+      var isActive = currentRespuestas[btn.dataset.crit] === btn.dataset.val;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', isActive);
+    }
+  }
+
+  function handleGuardarEvaluacion(com){
+    if(!selTaller || !selRol) return;
+    var nombreMiembro = com.roles[selRol] || '';
+    var existing = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === selTaller && e.rol === selRol; });
+    if(existing){
+      existing.respuestas = Object.assign({}, currentRespuestas);
+      existing.comentarios = Object.assign({}, currentComentarios);
+      existing.nombreMiembro = nombreMiembro;
+      existing.actualizado = new Date().toISOString();
+    }else{
+      state.evaluaciones.push({
+        id: uid('ev'),
+        comisionId: com.id,
+        tallerId: selTaller,
+        rol: selRol,
+        nombreMiembro: nombreMiembro,
+        respuestas: Object.assign({}, currentRespuestas),
+        comentarios: Object.assign({}, currentComentarios),
+        actualizado: new Date().toISOString()
+      });
+    }
+    saveState();
+    clearDirty('evaluar');
+    updateHeaderCounter();
+    toast('Evaluación guardada');
+    renderRubrica(com);
+  }
+
+  function mountCortesSubtab(com, container){
+    var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
+    if(asignados.length === 0){
+      container.innerHTML = emptyStateSubtab('Primero asigna la mesa directiva', 'Necesitas al menos un miembro con nombre asignado para poder evaluar los cortes.', 'mesa', 'Ir a Mesa directiva');
+      return;
+    }
+    if(!selCorteTipo || !CORTES.find(function(c){ return c.key === selCorteTipo; })) selCorteTipo = CORTES[0].key;
+    if(!selRol || !asignados.find(function(r){ return r.key === selRol; })) selRol = asignados[0].key;
+
+    container.innerHTML =
+      '<div class="evaluar-selectors">' +
+        '<label class="select-field">Corte<div class="select-wrap"><select id="sel-corte">' +
+          CORTES.map(function(c){ return '<option value="' + c.key + '"' + (c.key === selCorteTipo ? ' selected' : '') + '>' + escapeHTML(c.label) + ' — ' + escapeHTML(c.desc) + ' (' + c.peso + '%)</option>'; }).join('') +
+        '</select></div></label>' +
+        '<label class="select-field">Miembro de la mesa<div class="select-wrap"><select id="sel-rol-corte">' +
+          asignados.map(function(r){ return '<option value="' + r.key + '"' + (r.key === selRol ? ' selected' : '') + '>' + escapeHTML(r.label) + ' — ' + escapeHTML(com.roles[r.key]) + '</option>'; }).join('') +
+        '</select></div></label>' +
+      '</div>' +
+      '<div id="rubrica-container"></div>';
+
+    document.getElementById('sel-corte').addEventListener('change', function(e){
+      var prev = selCorteTipo;
+      if(!confirmDiscardIfDirty()){ e.target.value = prev; return; }
+      selCorteTipo = e.target.value;
+      renderRubricaCorte(com);
+    });
+    document.getElementById('sel-rol-corte').addEventListener('change', function(e){
+      var prev = selRol;
+      if(!confirmDiscardIfDirty()){ e.target.value = prev; return; }
+      selRol = e.target.value;
+      renderRubricaCorte(com);
+    });
+
+    renderRubricaCorte(com);
+  }
+
+  function renderRubricaCorte(com){
+    var container = document.getElementById('rubrica-container');
+    if(!container) return;
+    if(!selRol || !(com.roles[selRol] || '').trim()){
+      container.innerHTML = '<p class="hint-text">Selecciona un miembro con nombre asignado para comenzar.</p>';
+      return;
+    }
+    var corteInfo = CORTES.find(function(c){ return c.key === selCorteTipo; });
+    var existing = state.cortes.find(function(c){ return c.comisionId === com.id && c.rol === selRol && c.corteTipo === selCorteTipo; });
+    currentRespuestas = existing ? Object.assign({}, existing.respuestas) : {};
+    currentComentarios = existing ? Object.assign({}, existing.comentarios || {}) : {};
+    var respondidos = Object.keys(currentRespuestas).length;
+    var rolLabel = ROLES.find(function(r){ return r.key === selRol; }).label;
+
+    container.innerHTML =
+      '<div class="rubrica-head">' +
+        '<div>' +
+          '<p class="rubrica-breadcrumb">' + escapeHTML(corteInfo.label) + ' — ' + escapeHTML(corteInfo.desc) + ' (' + corteInfo.peso + '%)</p>' +
+          '<h2 class="rubrica-title">' + escapeHTML(com.roles[selRol]) + ' <span class="rubrica-rol">— ' + escapeHTML(rolLabel) + '</span></h2>' +
+        '</div>' +
+        '<span class="rubrica-progress">' + respondidos + '/' + TOTAL_CRIT + ' respondidos</span>' +
+      '</div>' +
+      '<div class="semaforo-row">' + semaforoRowInnerHTML(currentRespuestas, selCorteTipo) + '</div>' +
+      dimensionesHTML(currentRespuestas, currentComentarios) +
+      '<div class="rubrica-footer">' +
+        '<span class="hint-text">' + (existing ? 'Última actualización: ' + formatFecha(existing.actualizado) : 'Aún no se ha guardado esta evaluación.') + '</span>' +
+        '<button type="button" class="btn btn-primary" id="btn-guardar-corte">Guardar evaluación</button>' +
+      '</div>' +
+      '<div class="rubrica-footer" style="border-top:none;padding-top:0;margin-top:.75rem;">' +
+        aprobacionSectionHTML(existing) +
+      '</div>';
+
+    container.querySelector('#btn-guardar-corte').addEventListener('click', function(){ handleGuardarCorte(com); });
+    bindCritToggles(container, 'cortes');
+    if(canApprove() && existing){
+      var btnAprobar = container.querySelector('#btn-aprobar-corte');
+      var btnRechazar = container.querySelector('#btn-rechazar-corte');
+      if(btnAprobar) btnAprobar.addEventListener('click', function(){ handleAprobarCorte(com, 'aprobado'); });
+      if(btnRechazar) btnRechazar.addEventListener('click', function(){ handleAprobarCorte(com, 'rechazado'); });
+    }
+  }
+
+  // La jerarquía de aprobación: el Subsecretario evalúa el corte (queda
+  // "pendiente"), y solo el Secretario General puede aprobarlo o rechazarlo.
+  // Cualquier nuevo guardado vuelve a poner el corte en pendiente.
+  function aprobacionSectionHTML(existing){
+    if(!existing){
+      return '<span class="hint-text">Guarda la evaluación para enviarla a aprobación del Secretario General.</span>';
+    }
+    var ap = existing.aprobacion || { estado:'pendiente' };
+    var estado = ap.estado || 'pendiente';
+    var label = estado === 'aprobado' ? 'Aprobado por Secretaría General' : estado === 'rechazado' ? 'Rechazado por Secretaría General' : 'Pendiente de aprobación del SG';
+    var html = '<div><span class="aprobacion-badge aprobacion-' + estado + '">' + escapeHTML(label) + '</span>' +
+      (ap.comentario ? '<p class="hint-text" style="margin-top:.5rem;">Comentario del SG: ' + escapeHTML(ap.comentario) + '</p>' : '') +
+      '</div>';
+    if(canApprove()){
+      html += '<div class="aprobacion-actions">' +
+        '<button type="button" class="btn btn-approve" id="btn-aprobar-corte">Aprobar</button>' +
+        '<button type="button" class="btn btn-reject" id="btn-rechazar-corte">Rechazar</button>' +
+      '</div>';
+    }
+    return html;
+  }
+
+  function handleAprobarCorte(com, estado){
+    var existing = state.cortes.find(function(c){ return c.comisionId === com.id && c.rol === selRol && c.corteTipo === selCorteTipo; });
+    if(!existing) return;
+    var comentario = '';
+    if(estado === 'rechazado'){
+      comentario = prompt('Comentario para el Subsecretario (opcional):', '') || '';
+    }
+    existing.aprobacion = { estado: estado, comentario: comentario, fecha: new Date().toISOString() };
+    saveState();
+    toast(estado === 'aprobado' ? 'Corte aprobado' : 'Corte rechazado');
+    renderRubricaCorte(com);
+  }
+
+  function handleGuardarCorte(com){
+    if(!selRol || !selCorteTipo) return;
+    var nombreMiembro = com.roles[selRol] || '';
+    var existing = state.cortes.find(function(c){ return c.comisionId === com.id && c.rol === selRol && c.corteTipo === selCorteTipo; });
+    var aprobacionNueva = { estado:'pendiente', comentario:'', fecha:'' };
+    if(existing){
+      existing.respuestas = Object.assign({}, currentRespuestas);
+      existing.comentarios = Object.assign({}, currentComentarios);
+      existing.nombreMiembro = nombreMiembro;
+      existing.actualizado = new Date().toISOString();
+      existing.aprobacion = aprobacionNueva;
+    }else{
+      state.cortes.push({
+        id: uid('corte'),
+        comisionId: com.id,
+        rol: selRol,
+        corteTipo: selCorteTipo,
+        nombreMiembro: nombreMiembro,
+        respuestas: Object.assign({}, currentRespuestas),
+        comentarios: Object.assign({}, currentComentarios),
+        aprobacion: aprobacionNueva,
+        actualizado: new Date().toISOString()
+      });
+    }
+    saveState();
+    clearDirty('cortes');
+    updateHeaderCounter();
+    toast('Evaluación de corte guardada — pendiente de aprobación del SG');
+    renderRubricaCorte(com);
+  }
+
+  function historicoHTML(com){
+    var hasRegs = state.evaluaciones.some(function(e){ return e.comisionId === com.id; });
+    if(!hasRegs){
+      return emptyState('Aún no hay historial', 'Cuando se guarde una evaluación de esta comisión, aparecerá aquí.');
+    }
+    var puntajeOptions = [['todos','Todos'],['alto','80–100'],['medio','50–79'],['bajo','0–49']];
+    var semaforoOptions = [['todos','Todos'],['verde','Verde'],['amarillo','Amarillo'],['rojo','Rojo']];
+    return '<div class="admin-filters">' +
+      '<label class="select-field admin-filter-search">Buscar' +
+        '<input type="text" id="historico-buscador" class="admin-search-input" placeholder="Persona o actividad…" value="' + escapeHTML(historicoBusqueda) + '">' +
+      '</label>' +
+      '<label class="select-field admin-filter-select">Puntaje<div class="select-wrap"><select id="historico-filtro-puntaje">' +
+        puntajeOptions.map(function(o){ return '<option value="' + o[0] + '"' + (historicoFiltroPuntaje === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      '</select></div></label>' +
+      '<label class="select-field admin-filter-select">Semáforo<div class="select-wrap"><select id="historico-filtro-semaforo">' +
+        semaforoOptions.map(function(o){ return '<option value="' + o[0] + '"' + (historicoFiltroSemaforo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      '</select></div></label>' +
+    '</div>' +
+    '<div id="historico-rows">' + historicoRowsHTML(com) + '</div>';
+  }
+
+  function historicoRowsHTML(com){
+    var regs = state.evaluaciones.filter(function(e){ return e.comisionId === com.id; });
+    var q = historicoBusqueda.trim().toLowerCase();
+    var filtered = regs.filter(function(ev){
+      var taller = state.talleres.find(function(t){ return t.id === ev.tallerId; });
+      var rolInfo = ROLES.find(function(r){ return r.key === ev.rol; });
+      if(q){
+        var haystack = (ev.nombreMiembro + ' ' + (rolInfo ? rolInfo.label : '') + ' ' + (taller ? taller.nombre : '') + ' ' + (taller ? tipoLabel(taller.tipo) : '')).toLowerCase();
+        if(haystack.indexOf(q) === -1) return false;
+      }
+      var claves = Object.keys(ev.respuestas || {});
+      var siCount = claves.filter(function(k){ return ev.respuestas[k] === 'si'; }).length;
+      var pct = Math.round((siCount / TOTAL_CRIT) * 100);
+      if(historicoFiltroPuntaje === 'alto' && pct < 80) return false;
+      if(historicoFiltroPuntaje === 'medio' && (pct < 50 || pct >= 80)) return false;
+      if(historicoFiltroPuntaje === 'bajo' && pct >= 50) return false;
+      if(historicoFiltroSemaforo !== 'todos' && semaforoInfo(ev.respuestas).key !== historicoFiltroSemaforo) return false;
+      return true;
+    }).sort(function(a, b){ return new Date(b.actualizado) - new Date(a.actualizado); });
+    if(filtered.length === 0){
+      return emptyState('Sin resultados', 'Ninguna evaluación coincide con los filtros actuales.');
+    }
+    return '<div class="historico-list">' + filtered.map(function(ev){
+      var taller = state.talleres.find(function(t){ return t.id === ev.tallerId; });
+      var rolInfo = ROLES.find(function(r){ return r.key === ev.rol; });
+      var respondidos = Object.keys(ev.respuestas || {}).length;
+      var estado = semaforoInfo(ev.respuestas).key;
+      return '<button type="button" class="historico-row" data-taller="' + ev.tallerId + '" data-rol="' + ev.rol + '">' +
+        '<span>' + escapeHTML(taller ? (tipoLabel(taller.tipo) + ' — ' + taller.nombre) : 'Actividad eliminada') + '</span>' +
+        '<span>' + escapeHTML(ev.nombreMiembro) + ' <span class="historico-meta">— ' + escapeHTML(rolInfo ? rolInfo.label : ev.rol) + '</span></span>' +
+        '<span class="historico-meta"><span class="semaforo-dot semaforo-' + estado + '"></span> ' + respondidos + '/' + TOTAL_CRIT + '</span>' +
+        '<span class="historico-meta">' + formatFecha(ev.actualizado) + '</span>' +
+        '</button>';
+    }).join('') + '</div>';
+  }
+
+  function bindHistoricoEvents(com){
+    var refresh = function(){
+      var container = document.getElementById('historico-rows');
+      if(container) container.innerHTML = historicoRowsHTML(com);
+    };
+    var search = document.getElementById('historico-buscador');
+    if(search) search.addEventListener('input', function(e){ historicoBusqueda = e.target.value; refresh(); });
+    var selPuntaje = document.getElementById('historico-filtro-puntaje');
+    if(selPuntaje) selPuntaje.addEventListener('change', function(e){ historicoFiltroPuntaje = e.target.value; refresh(); });
+    var selSemaforo = document.getElementById('historico-filtro-semaforo');
+    if(selSemaforo) selSemaforo.addEventListener('change', function(e){ historicoFiltroSemaforo = e.target.value; refresh(); });
+  }
+
+  function bindComisionesEvents(){
+    var el = document.getElementById('view-comisiones');
+
+    function markRowDirty(formId, row){
+      markDirty(formId);
+      var btn = row.querySelector('.row-save-btn');
+      if(btn) btn.classList.add('is-dirty');
+    }
+
+    // Mesa directiva y los campos de una actividad ya NO se guardan solos:
+    // solo marcan la sección como "con cambios" hasta que se pulsa Guardar.
+    function handleFieldEdit(e){
+      if(e.target.dataset.role){
+        markRowDirty('mesa', el.querySelector('.comision-roles').closest('.card'));
+        return;
+      }
+      var tallerRow = e.target.closest('.taller-row');
+      if(tallerRow && e.target.dataset.field){
+        markRowDirty('taller-' + tallerRow.dataset.id, tallerRow);
+      }
+    }
+    el.addEventListener('input', handleFieldEdit);
+    el.addEventListener('change', function(e){
+      handleFieldEdit(e);
+      if(e.target.classList.contains('oradores-add-select') && e.target.value){
+        var holder = e.target.closest('[data-oradores-holder]');
+        var row = e.target.closest('.taller-row');
+        var com = currentComision();
+        if(!holder || !row || !com) return;
+        var keys = JSON.parse(holder.dataset.selected || '[]');
+        keys.push(e.target.value);
+        holder.dataset.selected = JSON.stringify(keys);
+        holder.innerHTML = '<span class="role-label">Orador(es)</span>' + oradoresWidgetHTML(com, keys);
+        markRowDirty('taller-' + row.dataset.id, row);
+      }
+    });
+
+    el.addEventListener('click', function(e){
+      var removeOrador = e.target.closest('[data-remove-orador]');
+      if(removeOrador){
+        var holder = removeOrador.closest('[data-oradores-holder]');
+        var row = removeOrador.closest('.taller-row');
+        var com = currentComision();
+        if(!holder || !row || !com) return;
+        var keys = JSON.parse(holder.dataset.selected || '[]').filter(function(k){ return k !== removeOrador.dataset.removeOrador; });
+        holder.dataset.selected = JSON.stringify(keys);
+        holder.innerHTML = '<span class="role-label">Orador(es)</span>' + oradoresWidgetHTML(com, keys);
+        markRowDirty('taller-' + row.dataset.id, row);
+        return;
+      }
+
+      if(e.target.closest('[data-action="save-mesa"]')){
+        var com = currentComision();
+        if(!com) return;
+        ROLES.forEach(function(r){
+          var input = el.querySelector('[data-role="' + r.key + '"]');
+          if(input) com.roles[r.key] = input.value.trim();
+        });
+        saveState();
+        clearDirty('mesa');
+        renderComisiones();
+        toast('Mesa directiva guardada');
+        return;
+      }
+
+      if(e.target.closest('[data-action="save-taller"]')){
+        var row = e.target.closest('.taller-row');
+        var t = state.talleres.find(function(x){ return x.id === row.dataset.id; });
+        if(!t) return;
+        var holder = row.querySelector('[data-oradores-holder]');
+        t.nombre = row.querySelector('[data-field="nombre"]').value.trim() || 'Actividad sin nombre';
+        t.tipo = row.querySelector('[data-field="tipo"]').value;
+        t.fecha = row.querySelector('[data-field="fecha"]').value;
+        t.oradores = JSON.parse(holder.dataset.selected || '[]');
+        saveState();
+        clearDirty('taller-' + t.id);
+        renderComisiones();
+        toast('Actividad guardada');
+        return;
+      }
+
+      var tile = e.target.closest('.comision-tile');
+      if(tile){
+        if(!confirmDiscardIfDirty()) return;
+        comisionDetailId = tile.dataset.id;
+        comisionDetailTab = 'mesa';
+        selTaller = '';
+        selRol = '';
+        historicoBusqueda = '';
+        historicoFiltroPuntaje = 'todos';
+        historicoFiltroSemaforo = 'todos';
+        renderComisiones();
+        window.scrollTo({ top:0, behavior:'smooth' });
+        return;
+      }
+      if(e.target.closest('#btn-comision-back')){
+        if(!confirmDiscardIfDirty()) return;
+        comisionDetailId = null;
+        renderComisiones();
+        return;
+      }
+      var subtabBtn = e.target.closest('.subtab-btn');
+      if(subtabBtn){
+        if(!confirmDiscardIfDirty()) return;
+        comisionDetailTab = subtabBtn.dataset.subtab;
+        renderComisiones();
+        return;
+      }
+      if(e.target.closest('#btn-add-taller')){
+        if(!confirmDiscardIfDirty()) return;
+        var com = currentComision();
+        if(!com) return;
+        state.talleres.push({ id: uid('tal'), comisionId: com.id, nombre:'Nueva actividad', fecha:'', oradores:[], tipo:'taller' });
+        saveState();
+        renderComisiones();
+        requestAnimationFrame(function(){
+          var rows = el.querySelectorAll('.taller-row');
+          var last = rows[rows.length - 1];
+          var input = last && last.querySelector('input[type=text]');
+          if(input){ input.focus(); input.select(); }
+        });
+        return;
+      }
+      var delBtn = e.target.closest('[data-action="del-taller"]');
+      if(delBtn){
+        if(!confirmDiscardIfDirty()) return;
+        var row = delBtn.closest('.taller-row');
+        var t = state.talleres.find(function(x){ return x.id === row.dataset.id; });
+        if(!t) return;
+        if(confirm('¿Eliminar la actividad "' + t.nombre + '"? También se eliminarán sus evaluaciones registradas.')){
+          state.talleres = state.talleres.filter(function(x){ return x.id !== t.id; });
+          state.evaluaciones = state.evaluaciones.filter(function(ev){ return ev.tallerId !== t.id; });
+          clearDirty('taller-' + t.id);
+          saveState();
+          renderComisiones();
+          updateHeaderCounter();
+          toast('Actividad eliminada');
+        }
+        return;
+      }
+      var histRow = e.target.closest('.historico-row');
+      if(histRow){
+        if(!confirmDiscardIfDirty()) return;
+        selTaller = histRow.dataset.taller;
+        selRol = histRow.dataset.rol;
+        comisionDetailTab = 'evaluar';
+        renderComisiones();
+        return;
+      }
+    });
+  }
+
+  /* ---------- Progreso ---------- */
+  function renderProgreso(){
+    var el = document.getElementById('progreso-content');
+    // El EyC solo ve el progreso de su propia comisión.
+    var comisionesAMostrar = isEyc()
+      ? state.comisiones.filter(function(c){ return c.id === session.comisionId; })
+      : state.comisiones;
+    var misTalleres = isEyc()
+      ? state.talleres.filter(function(t){ return t.comisionId === session.comisionId; })
+      : state.talleres;
+    if(misTalleres.length === 0){
+      el.innerHTML = isEyc()
+        ? emptyState('Aún no hay actividades', 'Agrega actividades en tu comisión (pestaña Comisiones → Actividades) para ver su progreso aquí.', 'comisiones', 'Ir a Comisiones')
+        : emptyState('Aún no hay actividades', 'Entra a una comisión y agrega su primera actividad.', 'comisiones', 'Ir a Comisiones');
+      return;
+    }
+    el.innerHTML = comisionesAMostrar.map(progresoComisionHTML).join('');
+  }
+
+  function progresoComisionHTML(com){
+    var misTalleres = state.talleres.filter(function(t){ return t.comisionId === com.id; });
+    var asignadosCount = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); }).length;
+    var totalPosible = asignadosCount * misTalleres.length;
+    var totalHecho = state.evaluaciones.filter(function(ev){
+      return ev.comisionId === com.id && Object.keys(ev.respuestas || {}).length > 0;
+    }).length;
+    var rows = misTalleres.length === 0
+      ? '<p class="hint-text" style="padding:.6rem 0;">Sin actividades registradas.</p>'
+      : misTalleres.map(function(t){ return progresoTallerRowHTML(com, t); }).join('');
+    return '<details class="progress-card" open>' +
+      '<summary>' +
+        '<span><span class="progress-sigla text-gradient">' + escapeHTML(com.sigla) + '</span>' + escapeHTML(com.nombre) + '</span>' +
+        '<span class="progress-count">' + totalHecho + '/' + totalPosible + '</span>' +
+      '</summary>' +
+      '<div class="progress-body">' + rows + '</div>' +
+      '</details>';
+  }
+
+  function progresoTallerRowHTML(com, taller){
+    var roleButtons = ROLES.map(function(r){
+      var nombre = (com.roles[r.key] || '').trim();
+      var asignado = !!nombre;
+      var ev = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === taller.id && e.rol === r.key; });
+      var hecho = asignado && ev && Object.keys(ev.respuestas || {}).length > 0;
+      var titulo = r.label + (asignado ? ' — ' + nombre : ' — sin asignar');
+      return '<button type="button" class="role-star' + (hecho ? ' is-done' : '') + (!asignado ? ' is-empty' : '') + '"' +
+        (asignado ? ' data-com="' + com.id + '" data-taller="' + taller.id + '" data-rol="' + r.key + '"' : ' disabled') +
+        ' title="' + escapeHTML(titulo) + '" aria-label="' + escapeHTML(titulo) + '">' +
+        '<svg class="star-ic" aria-hidden="true"><use href="#star-shape"/></svg>' +
+        '</button>';
+    }).join('');
+    return '<div class="progress-row">' +
+      '<span class="progress-taller">' + escapeHTML(taller.nombre) + '</span>' +
+      '<span class="progress-roles">' + roleButtons + '</span>' +
+      '</div>';
+  }
+
+  // El clic sobre una estrella de progreso funciona igual en "Progreso" y en
+  // "Admin" (comparten el mismo markup): salta directo a Evaluar ese taller.
+  function handleProgressAreaClick(e){
+    var btn = e.target.closest('.role-star');
+    if(!btn || btn.disabled) return;
+    comisionDetailId = btn.dataset.com;
+    comisionDetailTab = 'evaluar';
+    selTaller = btn.dataset.taller;
+    selRol = btn.dataset.rol;
+    switchView('comisiones');
+  }
+
+  function bindProgresoEvents(){
+    document.getElementById('view-progreso').addEventListener('click', handleProgressAreaClick);
+    document.getElementById('view-admin').addEventListener('click', handleProgressAreaClick);
+  }
+
+  /* ---------- Admin ---------- */
+  function renderAdmin(){
+    var el = document.getElementById('admin-content');
+    el.innerHTML =
+      adminDashboardStatsHTML() +
+      '<h2 class="admin-section-title">Aprobaciones pendientes</h2>' + adminAprobacionesHTML() +
+      '<h2 class="admin-section-title">Fases de los cortes</h2>' + adminConfigCortesHTML() +
+      '<h2 class="admin-section-title">Rendimiento por comisión y miembro</h2>' + adminRendimientoHTML() +
+      '<h2 class="admin-section-title">Semáforo por corte</h2>' + adminSemaforoHTML() +
+      '<h2 class="admin-section-title">Progreso de actividades por comisión</h2>' + adminProgresoHTML() +
+      '<h2 class="admin-section-title">Todas las evaluaciones</h2>' + adminTablaHTML();
+    bindAdminAprobacionesEvents();
+    bindAdminConfigCortesEvents();
+    bindAdminRendimientoEvents();
+  }
+
+  // Resumen tipo dashboard — pensado para que Subse/SG vean el estado
+  // general del evento de un vistazo al entrar a Monitoreo.
+  function adminDashboardStatsHTML(){
+    var comisionesConMesa = state.comisiones.filter(function(c){ return ROLES.some(function(r){ return (c.roles[r.key] || '').trim(); }); }).length;
+    var actividadesEvaluadas = state.evaluaciones.filter(function(e){ return Object.keys(e.respuestas || {}).length > 0; }).length;
+    var cortesPendientes = state.cortes.filter(function(c){ return !c.aprobacion || c.aprobacion.estado === 'pendiente'; }).length;
+    var cortesAprobados = state.cortes.filter(function(c){ return c.aprobacion && c.aprobacion.estado === 'aprobado'; }).length;
+    return '<div class="dash-stats">' +
+      '<div class="dash-stat"><div class="dash-stat-value">' + state.comisiones.length + '</div><div class="dash-stat-label">Comisiones totales</div></div>' +
+      '<div class="dash-stat"><div class="dash-stat-value">' + comisionesConMesa + '</div><div class="dash-stat-label">Con mesa asignada</div></div>' +
+      '<div class="dash-stat"><div class="dash-stat-value">' + actividadesEvaluadas + '</div><div class="dash-stat-label">Evaluaciones de actividad</div></div>' +
+      '<div class="dash-stat"><div class="dash-stat-value">' + cortesPendientes + '</div><div class="dash-stat-label">Cortes pendientes de aprobación</div></div>' +
+      '<div class="dash-stat"><div class="dash-stat-value">' + cortesAprobados + '</div><div class="dash-stat-label">Cortes aprobados</div></div>' +
+    '</div>';
+  }
+
+  // Jerarquía de aprobación: el Subsecretario evalúa un corte → queda
+  // pendiente → solo el Secretario General lo aprueba o rechaza aquí mismo,
+  // sin tener que entrar comisión por comisión.
+  function adminAprobacionesHTML(){
+    var pendientes = state.cortes
+      .filter(function(c){ return (!c.aprobacion || c.aprobacion.estado === 'pendiente') && Object.keys(c.respuestas || {}).length > 0; })
+      .sort(function(a, b){ return new Date(b.actualizado) - new Date(a.actualizado); });
+    if(pendientes.length === 0){
+      return emptyState('No hay aprobaciones pendientes', 'Cuando la Subsecretaría evalúe un corte, aparecerá aquí para que el Secretario General lo apruebe o rechace.');
+    }
+    var rows = pendientes.map(function(c){
+      var com = state.comisiones.find(function(x){ return x.id === c.comisionId; });
+      var corteInfo = CORTES.find(function(x){ return x.key === c.corteTipo; });
+      var rolInfo = ROLES.find(function(x){ return x.key === c.rol; });
+      var acciones = canApprove()
+        ? '<div class="aprobacion-actions" style="margin-top:0;">' +
+            '<button type="button" class="btn btn-sm btn-approve" data-approve-corte="' + c.id + '">Aprobar</button>' +
+            '<button type="button" class="btn btn-sm btn-reject" data-reject-corte="' + c.id + '">Rechazar</button>' +
+          '</div>'
+        : '<span class="aprobacion-badge aprobacion-pendiente">Pendiente</span>';
+      return '<tr>' +
+        '<td>' + acciones + '</td>' +
+        '<td>' + escapeHTML(com ? com.sigla : '—') + '</td>' +
+        '<td>' + escapeHTML(c.nombreMiembro) + ' <span class="historico-meta">— ' + escapeHTML(rolInfo ? rolInfo.label : c.rol) + '</span></td>' +
+        '<td>' + escapeHTML(corteInfo ? corteInfo.label : c.corteTipo) + '</td>' +
+        '<td>' + formatFecha(c.actualizado) + '</td>' +
+        '</tr>';
+    }).join('');
+    return '<div class="admin-table-wrap"><table class="admin-table">' +
+      '<thead><tr><th>Acción</th><th>Comisión</th><th>Persona</th><th>Corte</th><th>Guardado</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function bindAdminAprobacionesEvents(){
+    var approveButtons = document.querySelectorAll('[data-approve-corte]');
+    for(var i=0;i<approveButtons.length;i++){
+      approveButtons[i].addEventListener('click', function(e){ adminDecidirCorte(e.currentTarget.dataset.approveCorte, 'aprobado'); });
+    }
+    var rejectButtons = document.querySelectorAll('[data-reject-corte]');
+    for(var j=0;j<rejectButtons.length;j++){
+      rejectButtons[j].addEventListener('click', function(e){ adminDecidirCorte(e.currentTarget.dataset.rejectCorte, 'rechazado'); });
+    }
+  }
+
+  function adminDecidirCorte(corteId, estado){
+    var rec = state.cortes.find(function(c){ return c.id === corteId; });
+    if(!rec) return;
+    var comentario = '';
+    if(estado === 'rechazado') comentario = prompt('Comentario para la Subsecretaría (opcional):', '') || '';
+    rec.aprobacion = { estado: estado, comentario: comentario, fecha: new Date().toISOString() };
+    saveState();
+    toast(estado === 'aprobado' ? 'Corte aprobado' : 'Corte rechazado');
+    renderAdmin();
+  }
+
+  // Cada corte es una fase con fecha de inicio configurable. Antes de esa
+  // fecha, "no evaluado" se muestra en gris en vez de rojo (ver semaforoInfoCorte).
+  function adminConfigCortesHTML(){
+    var campos = CORTES.map(function(c){
+      var val = (state.configCortes && state.configCortes[c.key] && state.configCortes[c.key].inicio) || '';
+      var activa = corteFaseActiva(c.key);
+      return '<label class="select-field admin-filter-select">' + escapeHTML(c.label) + ' — inicio de fase' +
+        '<input type="date" class="admin-date-input" data-corte-config="' + c.key + '" value="' + escapeHTML(val) + '">' +
+        '<span class="admin-fase-estado">' + (val ? (activa ? 'Fase activa' : 'Aún no inicia') : 'Sin fecha — siempre activa') + '</span>' +
+      '</label>';
+    }).join('');
+    return '<div class="admin-filters">' + campos + '</div>' +
+      '<p class="hint-text">Antes de la fecha de inicio de un corte, quien todavía no tenga evaluación aparece en gris (fase aún no iniciada) en vez de rojo.</p>';
+  }
+
+  function bindAdminConfigCortesEvents(){
+    var inputs = document.querySelectorAll('[data-corte-config]');
+    for(var i=0;i<inputs.length;i++){
+      inputs[i].addEventListener('change', function(e){
+        var key = e.target.dataset.corteConfig;
+        if(!state.configCortes[key]) state.configCortes[key] = { inicio:'' };
+        state.configCortes[key].inicio = e.target.value;
+        saveState();
+        renderAdmin();
+      });
+    }
+  }
+
+  // Rendimiento: para cada persona con nombre asignado, cuánto de la mesa
+  // directiva ya se evaluó (actividades) y qué % de "Sí" acumula entre todas
+  // sus evaluaciones (actividades + cortes) — un vistazo del desempeño real,
+  // no solo del estado de los cortes.
+  // Puntaje de un corte (0-100): % de criterios en "Sí" sobre el total de la
+  // rúbrica (no solo sobre lo respondido) — un corte a medio llenar pesa
+  // menos, igual que en el semáforo. null = corte sin evaluar.
+  function corteScore(rec){
+    if(!rec) return null;
+    var vals = Object.keys(rec.respuestas || {}).map(function(k){ return rec.respuestas[k]; });
+    if(vals.length === 0) return null;
+    var si = vals.filter(function(v){ return v === 'si'; }).length;
+    return Math.round((si / TOTAL_CRIT) * 100);
+  }
+
+  // Una fila por persona con nombre asignado: puntaje de cada corte (0-100,
+  // ponderado por su peso hacia el Puntaje Final) y un estatus de
+  // continuidad sugerido — igual a la metodología de cortes/pesos del
+  // informe (Corte 1 25% + Corte 2 25% + Evaluación Final 50%).
+  function computeRendimientoRows(){
+    var rows = [];
+    state.comisiones.forEach(function(com){
+      var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
+      asignados.forEach(function(r){
+        var misCortes = state.cortes.filter(function(c){ return c.comisionId === com.id && c.rol === r.key; });
+        var corteScores = {};
+        var corteEstados = {};
+        CORTES.forEach(function(c){
+          var rec = misCortes.find(function(x){ return x.corteTipo === c.key; });
+          corteScores[c.key] = corteScore(rec);
+          corteEstados[c.key] = semaforoInfoCorte(c.key, rec ? rec.respuestas : {}).key;
+        });
+        var puntajeFinal = Math.round(CORTES.reduce(function(sum, c){
+          return sum + (corteScores[c.key] || 0) * (c.peso / 100);
+        }, 0));
+        var evaluados = CORTES.filter(function(c){ return corteScores[c.key] !== null; }).length;
+        // Con cortes pendientes el Puntaje Final es parcial (los que faltan
+        // pesan 0) — no es justo emitir "recomienda sustitución" todavía,
+        // así que el estatus solo se decide cuando ya se evaluaron los 3.
+        var estatus = evaluados === 0 ? 'No evaluado'
+          : evaluados < CORTES.length ? 'Evaluación en curso'
+          : puntajeFinal >= 80 ? 'Continúa en el rol'
+          : puntajeFinal >= 50 ? 'Continúa con seguimiento'
+          : 'Se recomienda sustitución';
+        var semaforoGeneral = CORTES.some(function(c){ return corteEstados[c.key] === 'rojo'; }) ? 'rojo'
+          : CORTES.some(function(c){ return corteEstados[c.key] === 'amarillo'; }) ? 'amarillo'
+          : CORTES.some(function(c){ return corteEstados[c.key] === 'gris'; }) ? 'gris' : 'verde';
+        rows.push({
+          comisionSigla: com.sigla, comisionNombre: com.nombre,
+          rolLabel: r.label, persona: com.roles[r.key],
+          corteScores: corteScores, corteEstados: corteEstados,
+          puntajeFinal: puntajeFinal, estatus: estatus, semaforoGeneral: semaforoGeneral
+        });
+      });
+    });
+    return rows;
+  }
+
+  function renderRendimientoRowsHTML(){
+    var rows = computeRendimientoRows();
+    if(rows.length === 0){
+      return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para ver su rendimiento aquí.');
+    }
+    var q = adminBusqueda.trim().toLowerCase();
+    var filtered = rows.filter(function(row){
+      if(q){
+        var haystack = (row.persona + ' ' + row.comisionSigla + ' ' + row.comisionNombre).toLowerCase();
+        if(haystack.indexOf(q) === -1) return false;
+      }
+      if(adminFiltroPuntaje === 'alto' && row.puntajeFinal < 80) return false;
+      if(adminFiltroPuntaje === 'medio' && (row.puntajeFinal < 50 || row.puntajeFinal >= 80)) return false;
+      if(adminFiltroPuntaje === 'bajo' && row.puntajeFinal >= 50) return false;
+      if(adminFiltroSemaforo !== 'todos' && row.semaforoGeneral !== adminFiltroSemaforo) return false;
+      return true;
+    });
+    if(filtered.length === 0){
+      return emptyState('Sin resultados', 'Ningún miembro coincide con los filtros actuales.');
+    }
+    var rowsHTML = filtered.map(function(row){
+      var corteCells = CORTES.map(function(c){
+        var score = row.corteScores[c.key];
+        var estado = row.corteEstados[c.key];
+        return '<td><span class="semaforo-dot semaforo-' + estado + '"></span> ' + (score === null ? '—' : score + '%') + '</td>';
+      }).join('');
+      return '<tr>' +
+        '<td>' + escapeHTML(row.comisionSigla) + '</td>' +
+        '<td>' + escapeHTML(row.persona) + ' <span class="historico-meta">— ' + escapeHTML(row.rolLabel) + '</span></td>' +
+        corteCells +
+        '<td>' + row.puntajeFinal + '/100</td>' +
+        '<td>' + escapeHTML(row.estatus) + '</td>' +
+        '</tr>';
+    }).join('');
+    return '<div class="admin-table-wrap"><table class="admin-table">' +
+      '<thead><tr><th>Comisión</th><th>Persona</th><th>Corte 1</th><th>Corte 2</th><th>Evaluación Final</th><th>Puntaje Final</th><th>Estatus de continuidad</th></tr></thead>' +
+      '<tbody>' + rowsHTML + '</tbody></table></div>';
+  }
+
+  function adminRendimientoHTML(){
+    var puntajeOptions = [['todos','Todos'],['alto','80–100'],['medio','50–79'],['bajo','0–49']];
+    var semaforoOptions = [['todos','Todos'],['verde','Verde'],['amarillo','Amarillo'],['rojo','Rojo'],['gris','Gris — fase sin iniciar']];
+    return '<div class="admin-filters">' +
+      '<label class="select-field admin-filter-search">Buscar' +
+        '<input type="text" id="admin-buscador" class="admin-search-input" placeholder="Persona o comisión…" value="' + escapeHTML(adminBusqueda) + '">' +
+      '</label>' +
+      '<label class="select-field admin-filter-select">Puntaje<div class="select-wrap"><select id="admin-filtro-puntaje">' +
+        puntajeOptions.map(function(o){ return '<option value="' + o[0] + '"' + (adminFiltroPuntaje === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      '</select></div></label>' +
+      '<label class="select-field admin-filter-select">Semáforo<div class="select-wrap"><select id="admin-filtro-semaforo">' +
+        semaforoOptions.map(function(o){ return '<option value="' + o[0] + '"' + (adminFiltroSemaforo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      '</select></div></label>' +
+    '</div>' +
+    '<div id="admin-rendimiento-rows">' + renderRendimientoRowsHTML() + '</div>';
+  }
+
+  function bindAdminRendimientoEvents(){
+    var refreshRows = function(){
+      var container = document.getElementById('admin-rendimiento-rows');
+      if(container) container.innerHTML = renderRendimientoRowsHTML();
+    };
+    var search = document.getElementById('admin-buscador');
+    if(search) search.addEventListener('input', function(e){ adminBusqueda = e.target.value; refreshRows(); });
+    var selPuntaje = document.getElementById('admin-filtro-puntaje');
+    if(selPuntaje) selPuntaje.addEventListener('change', function(e){ adminFiltroPuntaje = e.target.value; refreshRows(); });
+    var selSemaforo = document.getElementById('admin-filtro-semaforo');
+    if(selSemaforo) selSemaforo.addEventListener('change', function(e){ adminFiltroSemaforo = e.target.value; refreshRows(); });
+  }
+
+  // Semáforo: por cada comisión con mesa asignada, una fila por persona con
+  // un punto de color por corte — pensado para que la oficina/SG lo valide
+  // de un vistazo, sin entrar comisión por comisión.
+  function adminSemaforoHTML(){
+    var rows = state.comisiones.map(function(com){
+      var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
+      return asignados.map(function(r){
+        var celdas = CORTES.map(function(c){
+          var rec = state.cortes.find(function(x){ return x.comisionId === com.id && x.rol === r.key && x.corteTipo === c.key; });
+          var estado = semaforoInfoCorte(c.key, rec ? rec.respuestas : {});
+          return '<td><span class="semaforo-dot semaforo-' + estado.key + '" title="' + escapeHTML(c.label + ': ' + estado.label) + '"></span></td>';
+        }).join('');
+        return '<tr>' +
+          '<td>' + escapeHTML(com.sigla) + '</td>' +
+          '<td>' + escapeHTML(com.roles[r.key]) + ' <span class="historico-meta">— ' + escapeHTML(r.label) + '</span></td>' +
+          celdas +
+          '</tr>';
+      }).join('');
+    }).join('');
+    if(!rows){
+      return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para ver su semáforo aquí.');
+    }
+    return '<div class="admin-table-wrap"><table class="admin-table">' +
+      '<thead><tr><th>Comisión</th><th>Persona</th><th>Corte 1</th><th>Corte 2</th><th>Evaluación Final</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function adminProgresoHTML(){
+    if(state.talleres.length === 0){
+      return emptyState('Aún no hay actividades', 'Entra a una comisión y agrega su primera actividad.');
+    }
+    return state.comisiones.map(progresoComisionHTML).join('');
+  }
+
+  function adminTablaHTML(){
+    var regs = state.evaluaciones.slice().sort(function(a,b){ return new Date(b.actualizado) - new Date(a.actualizado); });
+    if(regs.length === 0){
+      return emptyState('Aún no hay datos', 'Cuando se guarden evaluaciones en cualquier comisión, aparecerán aquí.');
+    }
+    var rows = regs.map(function(ev){
+      var com = state.comisiones.find(function(c){ return c.id === ev.comisionId; });
+      var taller = state.talleres.find(function(t){ return t.id === ev.tallerId; });
+      var rolInfo = ROLES.find(function(r){ return r.key === ev.rol; });
+      var respondidos = Object.keys(ev.respuestas || {}).length;
+      return '<tr>' +
+        '<td>' + escapeHTML(com ? com.sigla : '—') + '</td>' +
+        '<td>' + escapeHTML(taller ? (tipoLabel(taller.tipo) + ' — ' + taller.nombre) : 'Actividad eliminada') + '</td>' +
+        '<td>' + escapeHTML(rolInfo ? rolInfo.label : ev.rol) + '</td>' +
+        '<td>' + escapeHTML(ev.nombreMiembro) + '</td>' +
+        '<td>' + respondidos + '/' + TOTAL_CRIT + (respondidos === TOTAL_CRIT ? ' · completo' : '') + '</td>' +
+        '<td>' + formatFecha(ev.actualizado) + '</td>' +
+        '</tr>';
+    }).join('');
+    return '<div class="admin-table-wrap"><table class="admin-table">' +
+      '<thead><tr><th>Comisión</th><th>Actividad</th><th>Rol</th><th>Persona</th><th>Respondidos</th><th>Actualizado</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  // Borra todo lo guardado (talleres, evaluaciones y nombres de mesa directiva
+  // reales) y vuelve a tratar la carga como "primer arranque", así loadState()
+  // repuebla las comisiones con los nombres de prueba de FIXED_COMISIONES.
+  function resetToTestData(){
+    if(!confirm('¿Restablecer los datos de prueba? Esto borra los talleres, evaluaciones y cortes guardados, y vuelve a cargar los nombres de ejemplo en la mesa directiva de cada comisión.')) return;
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    state = loadState();
+    comisionDetailId = null;
+    comisionDetailTab = 'mesa';
+    selTaller = '';
+    selRol = '';
+    selCorteTipo = '';
+    currentRespuestas = {};
+    dirtyForms = {};
+    updateHeaderCounter();
+    var activeTab = document.querySelector('.nav-tab.is-active');
+    switchView(activeTab ? activeTab.dataset.view : 'comisiones');
+    toast('Datos de prueba restablecidos');
+  }
+
+  // Genera un set de datos de ejemplo con volumen real (varias comisiones,
+  // actividades de distinto tipo, evaluaciones y cortes con resultados
+  // variados) para poder ver la app funcionando de punta a punta: filtros
+  // con resultados de sobra, semáforo en sus 4 colores, rendimiento con
+  // números reales. Es aditivo: no borra lo que ya tengas.
+  function seedRichDemoData(){
+    if(!confirm('¿Cargar un set de datos de ejemplo completo? Se agregan actividades, evaluaciones y cortes de muestra en varias comisiones (no borra lo que ya tengas, se suma).')) return;
+
+    var hoy = new Date();
+    function fechaOffset(dias){
+      var d = new Date(hoy);
+      d.setDate(d.getDate() + dias);
+      return d.toISOString().slice(0, 10);
+    }
+
+    // Corte 1 ya empezó hace tiempo, Corte 2 empezó hace poco, la Evaluación
+    // Final todavía no — así se ven los 4 colores del semáforo en acción.
+    state.configCortes = {
+      corte1: { inicio: fechaOffset(-20) },
+      corte2: { inicio: fechaOffset(-3) },
+      final: { inicio: fechaOffset(10) }
+    };
+
+    var patrones = [
+      RUBRICA_FLAT_IDS.map(function(){ return 'si'; }),
+      ['si','si','no','si','si','no','si'],
+      RUBRICA_FLAT_IDS.map(function(){ return 'no'; })
+    ];
+    function respuestasDe(patronIdx){
+      var patron = patrones[patronIdx % patrones.length];
+      var respuestas = {};
+      RUBRICA_FLAT_IDS.forEach(function(critId, i){ respuestas[critId] = patron[i]; });
+      return respuestas;
+    }
+
+    var demoComisiones = ['ctd', 'pnud', 'cop', 'ams', 'csnu'];
+    var actividadesPlantilla = [
+      { tipo:'taller', nombre:'Taller de procedimiento parlamentario', dias:-15 },
+      { tipo:'encuentro', nombre:'Encuentro de bienvenida', dias:-10 },
+      { tipo:'reunion', nombre:'Reunión de seguimiento', dias:-2 }
+    ];
+
+    demoComisiones.forEach(function(comId, idx){
+      var com = state.comisiones.find(function(c){ return c.id === comId; });
+      var fc = FIXED_COMISIONES.find(function(f){ return f.id === comId; });
+      if(!com || !fc) return;
+      ROLES.forEach(function(r){
+        if(!com.roles[r.key] && fc.rolesDemo) com.roles[r.key] = fc.rolesDemo[r.key];
+      });
+      var directorKey = com.roles.director ? ['director'] : [];
+
+      var misActividades = actividadesPlantilla.map(function(pl){
+        var t = { id: uid('tal'), comisionId: com.id, nombre: pl.nombre, tipo: pl.tipo, fecha: fechaOffset(pl.dias), oradores: directorKey };
+        state.talleres.push(t);
+        return t;
+      });
+
+      misActividades.forEach(function(act, ai){
+        ROLES.forEach(function(r, ri){
+          if(!com.roles[r.key]) return;
+          if((idx + ai + ri) % 4 === 3) return; // deja algunas combinaciones sin evaluar
+          var respuestas = respuestasDe(idx + ai + ri);
+          var comentarios = {};
+          if((ai + ri) % 2 === 0) comentarios[RUBRICA_FLAT_IDS[0]] = 'Comentario de ejemplo generado automáticamente.';
+          state.evaluaciones.push({
+            id: uid('ev'), comisionId: com.id, tallerId: act.id, rol: r.key,
+            nombreMiembro: com.roles[r.key], respuestas: respuestas, comentarios: comentarios,
+            actualizado: act.fecha + 'T12:00:00.000Z'
+          });
+        });
+      });
+
+      // Estados de aprobación variados, para poder ver la cola de
+      // aprobaciones y los 3 estados posibles ya en Monitoreo.
+      var aprobacionesDemo = [
+        { estado:'pendiente', comentario:'', fecha:'' },
+        { estado:'aprobado', comentario:'', fecha: fechaOffset(-14) + 'T09:00:00.000Z' },
+        { estado:'rechazado', comentario:'Faltan evidencias de asistencia.', fecha: fechaOffset(-14) + 'T09:00:00.000Z' }
+      ];
+      ROLES.forEach(function(r, ri){
+        if(!com.roles[r.key]) return;
+        state.cortes.push({
+          id: uid('corte'), comisionId: com.id, rol: r.key, corteTipo:'corte1',
+          nombreMiembro: com.roles[r.key], respuestas: respuestasDe(idx + ri), comentarios:{},
+          aprobacion: aprobacionesDemo[(idx + ri) % aprobacionesDemo.length],
+          actualizado: fechaOffset(-15) + 'T12:00:00.000Z'
+        });
+        if(r.key === 'director'){
+          state.cortes.push({
+            id: uid('corte'), comisionId: com.id, rol: r.key, corteTipo:'corte2',
+            nombreMiembro: com.roles[r.key], respuestas: respuestasDe(0), comentarios:{},
+            aprobacion: { estado:'pendiente', comentario:'', fecha:'' },
+            actualizado: fechaOffset(-2) + 'T12:00:00.000Z'
+          });
+        }
+      });
+      // La Evaluación Final se deja sin evaluar en todas — su fase todavía
+      // no empieza, así se ve el estado gris en Admin y en Cortes.
+    });
+
+    saveState();
+    updateHeaderCounter();
+    var activeTab = document.querySelector('.nav-tab.is-active');
+    switchView(activeTab ? activeTab.dataset.view : 'admin');
+    toast('Datos de ejemplo cargados');
+  }
+
+  /* ---------- Init ---------- */
+  function bindGlobalEvents(){
+    var tabs = document.querySelectorAll('.nav-tab');
+    for(var i=0;i<tabs.length;i++){
+      tabs[i].addEventListener('click', function(e){
+        if(!confirmDiscardIfDirty()) return;
+        switchView(e.currentTarget.dataset.view);
+      });
+    }
+    document.getElementById('btn-reset-demo').addEventListener('click', resetToTestData);
+    document.getElementById('btn-seed-demo').addEventListener('click', seedRichDemoData);
+    document.addEventListener('click', function(e){
+      var gotoBtn = e.target.closest('[data-goto]');
+      if(gotoBtn){ if(!confirmDiscardIfDirty()) return; switchView(gotoBtn.dataset.goto); return; }
+      var gotoSub = e.target.closest('[data-goto-subtab]');
+      if(gotoSub){ if(!confirmDiscardIfDirty()) return; comisionDetailTab = gotoSub.dataset.gotoSubtab; renderComisiones(); return; }
+    });
+    bindComisionesEvents();
+    bindProgresoEvents();
+  }
+
+  function init(){
+    initTheme();
+    updateHeaderCounter();
+    populateLoginComisiones();
+    bindLoginEvents();
+    bindGlobalEvents();
+    loadParticles();
+    window.addEventListener('beforeunload', function(e){
+      if(hasAnyDirty()){ e.preventDefault(); e.returnValue = ''; }
+    });
+    if(session) enterApp();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
