@@ -11,6 +11,7 @@
     }
     document.getElementById('view-' + view).classList.add('is-active');
     document.querySelector('.nav-tab[data-view="' + view + '"]').classList.add('is-active');
+    cerrarNavMovil_(); // no-op en escritorio; en móvil, cierra el menú hamburguesa tras navegar
     window.scrollTo({ top:0, behavior:'smooth' });
     if(view === 'comisiones') renderComisiones();
     if(view === 'progreso') renderProgreso();
@@ -62,7 +63,24 @@
     else location.href = 'index.html';
   }
 
+  // El menú hamburguesa (solo aparece en móvil, ver el media query de
+  // .hamburger-btn) es la misma <nav id="nav-tabs"> de siempre — nav-toggle
+  // solo le agrega/quita .is-open. cerrarNavMovil_() se llama también al
+  // elegir una pestaña, para no dejar el menú abierto tapando el contenido
+  // después de navegar.
+  function cerrarNavMovil_(){
+    var nav = document.getElementById('nav-tabs');
+    var toggle = document.getElementById('nav-toggle');
+    if(nav) nav.classList.remove('is-open');
+    if(toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
+
   function bindGlobalEvents(){
+    on_('nav-toggle', 'click', function(){
+      var nav = document.getElementById('nav-tabs');
+      var isOpen = nav.classList.toggle('is-open');
+      document.getElementById('nav-toggle').setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
     var tabs = document.querySelectorAll('.nav-tab');
     for(var i=0;i<tabs.length;i++){
       tabs[i].addEventListener('click', function(e){

@@ -111,16 +111,22 @@
      clase propia: no comparte semántica con el de tema, sólo el aspecto. */
   .help-btn{width:36px;height:36px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;font-weight:700;font-size:.92rem;transition:border-color .15s var(--ease),color .15s var(--ease);}
   .help-btn:hover{border-color:var(--border-strong);color:var(--text);}
-  /* El botón "← Volver" (id=btn-back) reusa esta clase con un ícono SVG en
-     vez del texto "?" — sin esto, un <svg> sin width/height propio cae al
-     tamaño intrínseco por defecto del navegador (enorme) en vez de encajar
-     en el círculo de 36px. */
+  /* El botón "Volver" (.view-back-btn, uno por vista) reusa esta clase con
+     un ícono SVG en vez del texto "?" — sin esto, un <svg> sin width/height
+     propio cae al tamaño intrínseco por defecto del navegador (enorme) en
+     vez de encajar en el círculo de 36px. */
   .help-btn svg{width:17px;height:17px;flex:none;}
   .theme-icon-dark{display:none;}
   :root[data-theme="dark"] .theme-icon-light{display:none;}
   :root[data-theme="dark"] .theme-icon-dark{display:block;}
   :root[data-theme="dark"] .brand-logo-light{display:none;}
   :root[data-theme="dark"] .brand-logo-dark{display:block;}
+
+  /* Oculto por defecto (escritorio, donde las 2-4 pestañas siempre caben
+     en una fila) — el media query de abajo lo muestra en móvil. */
+  .hamburger-btn{display:none;width:36px;height:36px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);align-items:center;justify-content:center;cursor:pointer;flex:none;transition:border-color .15s var(--ease),color .15s var(--ease);}
+  .hamburger-btn:hover{border-color:var(--border-strong);color:var(--text);}
+  .hamburger-btn svg{width:18px;height:18px;flex:none;}
 
   .nav-tabs{max-width:920px;margin:0 auto;padding:0 1.25rem;display:flex;gap:.25rem;overflow-x:auto;scrollbar-width:none;}
   .nav-tabs::-webkit-scrollbar{display:none;}
@@ -130,6 +136,21 @@
   .nav-tab:hover{color:var(--text);}
   .nav-tab.is-active{color:var(--text);font-weight:600;}
   .nav-tab.is-active::after{background:var(--accent-gradient);}
+
+  /* Menú hamburguesa: en vez de la fila horizontal con overflow-x:auto de
+     escritorio (donde "Monitoreo" quedaba cortado a la mitad sin ninguna
+     pista de que se podía deslizar), en móvil las pestañas se esconden
+     detrás de un botón y se listan en columna, ítem por fila, al abrirlo —
+     empuja el contenido de abajo en vez de superponerse, sin necesitar
+     z-index ni un overlay. */
+  @media (max-width:600px){
+    .hamburger-btn{display:inline-flex;}
+    .nav-tabs{display:none;max-width:none;flex-direction:column;align-items:stretch;overflow-x:visible;gap:0;padding:.4rem .5rem .6rem;border-top:1px solid var(--border);}
+    .nav-tabs.is-open{display:flex;}
+    .nav-tab{width:100%;justify-content:flex-start;padding:.85rem .6rem;border-radius:var(--radius-sm);min-height:44px;}
+    .nav-tab::after{display:none;}
+    .nav-tab.is-active{background:var(--surface-2);}
+  }
 
   /* Layout */
   .container{max-width:920px;margin:0 auto;padding:1.75rem 1.25rem calc(var(--footer-h) + 2rem);position:relative;z-index:1;}
@@ -320,9 +341,20 @@
   .footer-logo{height:38px;width:auto;}
   .footer-divider{width:1px;height:30px;background:var(--border);flex:none;}
   @media (max-width:560px){
+    /* El aviso de privacidad ("Los datos se guardan solo en este
+       navegador...") se esconde en móvil — con los isotipos ya apilados
+       en su propia fila (ver arriba), agregarle dos líneas más de texto
+       hacía el footer fijo demasiado alto y competía con el contenido.
+       Los isotipos institucionales, que si tienen que estar siempre
+       visibles (ver comentario en .site-footer), se quedan. */
+    .site-footer p{display:none;}
     .footer-inner{flex-direction:column;gap:.4rem;padding:.6rem 1rem;}
     .footer-divider{display:none;}
     .footer-logo{height:32px;}
+    /* Angosto que --footer-h:96px de arriba, que asumía el aviso de texto
+       de 2 líneas todavía visible — ya sin él, el footer vuelve a ser una
+       sola fila de isotipos, igual de compacto que en escritorio. */
+    :root{--footer-h:60px;}
     .container{padding-bottom:calc(var(--footer-h) + 2rem);}
     .login-shell{padding-bottom:calc(var(--footer-h) + 2rem);}
   }
