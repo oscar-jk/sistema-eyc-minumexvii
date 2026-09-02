@@ -235,28 +235,14 @@
     }
     var puntajeA = calcPuntajeA(currentRespuestas);
     var puntajeTotal = computePuntaje(currentRespuestas, currentPuntosDim);
-    var existing = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === selTaller && e.miembroId === selMiembroId; });
-    if(existing){
-      existing.respuestas = Object.assign({}, currentRespuestas);
-      existing.comentarios = Object.assign({}, currentComentarios);
-      existing.puntosDim = Object.assign({}, currentPuntosDim);
-      existing.puntajeA = puntajeA;
-      existing.puntajeTotal = puntajeTotal;
-      existing.rol = miembro.rolKey;
-      existing.nombreMiembro = miembro.nombre;
-      existing.actualizado = new Date().toISOString();
-    }else{
-      state.evaluaciones.push({
-        id: uid('ev'), comisionId: com.id, tallerId: selTaller, miembroId: selMiembroId,
-        rol: miembro.rolKey, nombreMiembro: miembro.nombre,
-        respuestas: Object.assign({}, currentRespuestas),
-        comentarios: Object.assign({}, currentComentarios),
-        puntosDim: Object.assign({}, currentPuntosDim),
-        puntajeA: puntajeA, puntajeTotal: puntajeTotal,
-        actualizado: new Date().toISOString()
-      });
-    }
-    saveState();
+    dataService.guardarEvaluacion({
+      comisionId: com.id, tallerId: selTaller, miembroId: selMiembroId,
+      rol: miembro.rolKey, nombreMiembro: miembro.nombre,
+      respuestas: Object.assign({}, currentRespuestas),
+      comentarios: Object.assign({}, currentComentarios),
+      puntosDim: Object.assign({}, currentPuntosDim),
+      puntajeA: puntajeA, puntajeTotal: puntajeTotal
+    });
     clearDirty('evaluar');
     updateHeaderCounter();
     toast('Evaluación guardada — ' + puntajeTotal + '/100');
@@ -363,25 +349,12 @@
       if(textarea) textarea.focus();
       return;
     }
-    var existing = state.cortes.find(function(c){ return c.miembroId === selMiembroId && c.corteKey === selCorteTipo; });
-    var ahora = new Date().toISOString();
-    if(existing){
-      existing.comentario = currentCorteComentario.trim();
-      existing.semaforoAlMomento = estado.key;
-      existing.promedioAlMomento = estado.promedio;
-      existing.requiereRevision = requiereComentario;
-      existing.fecha = ahora;
-      existing.decisionSga = { estado:'pendiente', comentario:'', fecha:'' };
-    }else{
-      state.cortes.push({
-        id: uid('corte'), comisionId: com.id, miembroId: selMiembroId, rolKey: miembro.rolKey, corteKey: selCorteTipo,
-        comentario: currentCorteComentario.trim(),
-        semaforoAlMomento: estado.key, promedioAlMomento: estado.promedio,
-        requiereRevision: requiereComentario, fecha: ahora,
-        decisionSga: { estado:'pendiente', comentario:'', fecha:'' }
-      });
-    }
-    saveState();
+    dataService.guardarCorte({
+      comisionId: com.id, miembroId: selMiembroId, rolKey: miembro.rolKey, corteKey: selCorteTipo,
+      comentario: currentCorteComentario.trim(),
+      semaforoAlMomento: estado.key, promedioAlMomento: estado.promedio,
+      requiereRevision: requiereComentario
+    });
     clearDirty('cortes');
     updateHeaderCounter();
     toast(requiereComentario ? 'Corte guardado — pasa a revisión del Secretario General' : 'Corte guardado');

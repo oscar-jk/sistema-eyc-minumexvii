@@ -81,7 +81,13 @@
     bindProgresoEvents();
   }
 
-  function init(){
+  async function init(){
+    // state.js ya cargó `state` de forma síncrona antes de que esto corra
+    // (ver var state = loadState(); en state.js) — este await es hoy un
+    // no-op (Promise.resolve del mismo state), pero deja el punto de
+    // entrada exacto donde una carga remota del roster reemplazará la
+    // carga local, sin que nada más en este archivo tenga que cambiar.
+    state = await dataService.init();
     initTheme();
     updateHeaderCounter();
     populateLoginComisiones();

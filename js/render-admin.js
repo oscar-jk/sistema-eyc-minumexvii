@@ -230,10 +230,7 @@
   function adminDecidirCorte(corteId, estado){
     var rec = state.cortes.find(function(c){ return c.id === corteId; });
     if(!rec) return;
-    rec.decisionSga = { estado: estado, comentario:'', fecha: new Date().toISOString() };
-    var miembro = miembroPorId(rec.miembroId);
-    if(miembro) miembro.continuidad = estado;
-    saveState();
+    dataService.decidirCorte(corteId, estado);
     toast(estado === 'continua' ? 'Marcado como "Continúa"' : 'Marcado como "No continúa"');
     renderAdmin();
   }
@@ -256,9 +253,7 @@
     for(var i=0;i<inputs.length;i++){
       inputs[i].addEventListener('change', function(e){
         var key = e.target.dataset.corteConfig;
-        if(!state.configCortes[key]) state.configCortes[key] = { inicio:'' };
-        state.configCortes[key].inicio = e.target.value;
-        saveState();
+        dataService.saveConfigCorte(key, e.target.value);
         // El modal vive fuera de #admin-content, así que sobrevive al
         // refresco de abajo — pero su propio contenido (qué fase está
         // activa) hay que actualizarlo aparte. renderAdmin() es necesario

@@ -345,23 +345,7 @@
         });
         if(cambios.length === 0){ clearDirty('mesa'); return; }
         var aplicarCambiosMesa = function(){
-          cambios.forEach(function(c){
-            if(c.miembro){
-              if(!c.nuevoNombre){
-                c.miembro.activo = false;
-                c.miembro.hasta = new Date().toISOString();
-              }else{
-                c.miembro.nombre = c.nuevoNombre;
-              }
-            }else if(c.nuevoNombre){
-              state.miembros.push({
-                id: uid('mb'), comisionId: com.id, rolKey: c.rolKey, nombre: c.nuevoNombre,
-                activo:true, desde:new Date().toISOString(), hasta:'', continuidad:''
-              });
-            }
-          });
-          rederivarRoles();
-          saveState();
+          dataService.guardarMesa(com.id, cambios);
           clearDirty('mesa');
           renderComisiones();
           toast('Mesa directiva guardada');
@@ -389,11 +373,12 @@
         var t = state.talleres.find(function(x){ return x.id === row.dataset.id; });
         if(!t) return;
         var holder = row.querySelector('[data-oradores-holder]');
-        t.nombre = row.querySelector('[data-field="nombre"]').value.trim() || 'Actividad sin nombre';
-        t.tipo = row.querySelector('[data-field="tipo"]').value;
-        t.fecha = row.querySelector('[data-field="fecha"]').value;
-        t.oradores = JSON.parse(holder.dataset.selected || '[]');
-        saveState();
+        dataService.saveTaller(t.id, {
+          nombre: row.querySelector('[data-field="nombre"]').value.trim() || 'Actividad sin nombre',
+          tipo: row.querySelector('[data-field="tipo"]').value,
+          fecha: row.querySelector('[data-field="fecha"]').value,
+          oradores: JSON.parse(holder.dataset.selected || '[]')
+        });
         clearDirty('taller-' + t.id);
         renderComisiones();
         toast('Actividad guardada');
@@ -435,8 +420,7 @@
         confirmDiscardIfDirty(function(){
           var com = currentComision();
           if(!com) return;
-          state.talleres.push({ id: uid('tal'), comisionId: com.id, nombre:'Nueva actividad', fecha:'', oradores:[], tipo:'taller', cerrada:false });
-          saveState();
+          dataService.crearTaller(com.id);
           renderComisiones();
           requestAnimationFrame(function(){
             var rows = el.querySelectorAll('.taller-row');
@@ -454,10 +438,8 @@
           var t = state.talleres.find(function(x){ return x.id === row.dataset.id; });
           if(!t) return;
           if(confirm('¿Eliminar la actividad "' + t.nombre + '"? También se eliminarán sus evaluaciones registradas.')){
-            state.talleres = state.talleres.filter(function(x){ return x.id !== t.id; });
-            state.evaluaciones = state.evaluaciones.filter(function(ev){ return ev.tallerId !== t.id; });
+            dataService.eliminarTaller(t.id);
             clearDirty('taller-' + t.id);
-            saveState();
             renderComisiones();
             updateHeaderCounter();
             toast('Actividad eliminada');
@@ -472,16 +454,14 @@
         var tCerrar = comCerrar && state.talleres.find(function(x){ return x.id === cerrarRow.dataset.id; });
         if(!tCerrar || !comCerrar) return;
         if(tCerrar.cerrada){
-          tCerrar.cerrada = false;
-          saveState();
+          dataService.setTallerCerrada(tCerrar.id, false);
           renderComisiones();
           toast('Actividad reabierta');
           return;
         }
         var pendientes = miembrosPendientesEnTaller(comCerrar, tCerrar);
         if(pendientes.length === 0){
-          tCerrar.cerrada = true;
-          saveState();
+          dataService.setTallerCerrada(tCerrar.id, true);
           renderComisiones();
           toast('Actividad cerrada');
           return;

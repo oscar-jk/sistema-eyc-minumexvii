@@ -25,14 +25,7 @@
     if(!pendingSustituir) return;
     var nombre = document.getElementById('sustituir-modal-input').value.trim();
     if(!nombre) return;
-    var actual = miembroActivo(pendingSustituir.comisionId, pendingSustituir.rolKey);
-    if(actual){ actual.activo = false; actual.hasta = new Date().toISOString(); }
-    state.miembros.push({
-      id: uid('mb'), comisionId: pendingSustituir.comisionId, rolKey: pendingSustituir.rolKey,
-      nombre: nombre, activo:true, desde:new Date().toISOString(), hasta:'', continuidad:''
-    });
-    rederivarRoles();
-    saveState();
+    dataService.sustituirMiembro(pendingSustituir.comisionId, pendingSustituir.rolKey, nombre);
     updateHeaderCounter();
     toast('Miembro sustituido');
     cerrarSustituirModal();
