@@ -289,7 +289,12 @@
   @media (max-width:640px){.historico-row{grid-template-columns:1fr;gap:.15rem;}}
 
   /* Admin */
-  .admin-table-wrap{overflow-x:auto;}
+  /* La tabla nunca envuelve texto (white-space:nowrap en th/td), así que en
+     móvil casi siempre hay más columnas de las que caben. La sombra en el
+     borde derecho es la única pista de que hay más contenido si se desliza
+     — sin ella, "Semáforo"/"Promedio"/"Evaluaciones" quedan invisibles y
+     nada avisa que existen. */
+  .admin-table-wrap{overflow-x:auto;box-shadow:inset -14px 0 10px -10px rgba(0,0,0,.22);}
   .admin-table{width:100%;border-collapse:collapse;font-size:.96rem;}
   .admin-table th{text-align:left;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-tertiary);font-weight:600;padding:.5rem .6rem;border-bottom:1px solid var(--border-strong);white-space:nowrap;}
   .admin-table td{padding:.6rem .6rem;border-bottom:1px solid var(--border);white-space:nowrap;}
