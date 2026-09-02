@@ -122,9 +122,6 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 16l4-4-4-4M20 12H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
-      <button type="button" class="help-btn" id="btn-back" aria-label="Volver" title="Volver">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
-      </button>
       <button type="button" class="help-btn" id="help-btn" aria-label="Cómo funciona este panel" title="Cómo funciona este panel">?</button>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro/oscuro">
         <svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 12H2.1M21.9 12h-2.4M6.3 6.3 4.6 4.6M19.4 19.4l-1.7-1.7M17.7 6.3l1.7-1.7M4.6 19.4l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -142,16 +139,28 @@
 
   <section id="view-comisiones" class="view is-active" role="tabpanel" aria-labelledby="tab-comisiones">
     <div class="view-header">
-      <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-2"></use></svg>Comisiones</h1>
-      <p class="view-desc" id="comisiones-desc">Elige una comisión para entrar: ahí configuras su mesa directiva, sus actividades y las evaluaciones.</p>
+      <div>
+        <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-2"></use></svg>Comisiones</h1>
+        <p class="view-desc" id="comisiones-desc">Elige una comisión para entrar: ahí configuras su mesa directiva, sus actividades y las evaluaciones.</p>
+      </div>
+      <button type="button" class="btn btn-secondary view-back-btn" data-action="volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+        Volver
+      </button>
     </div>
     <div id="comisiones-content"></div>
   </section>
 
   <section id="view-progreso" class="view" role="tabpanel" aria-labelledby="tab-progreso">
     <div class="view-header">
-      <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-3"></use></svg>Progreso</h1>
-      <p class="view-desc">Estado de las evaluaciones por comisión y actividad. Toca una estrella para entrar directo a completar una pendiente.</p>
+      <div>
+        <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-3"></use></svg>Progreso</h1>
+        <p class="view-desc">Estado de las evaluaciones por comisión y actividad. Toca una estrella para entrar directo a completar una pendiente.</p>
+      </div>
+      <button type="button" class="btn btn-secondary view-back-btn" data-action="volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+        Volver
+      </button>
     </div>
     <div id="progreso-content"></div>
   </section>

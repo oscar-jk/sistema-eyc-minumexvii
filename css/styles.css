@@ -136,9 +136,18 @@
   .view{display:none !important;}
   .view.is-active{display:block !important;animation:fadeIn .25s var(--ease);}
   @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-  .view-header{margin-bottom:1.5rem;}
-  .view-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  /* flex (no solo margin) para que el botón "Volver" de cada vista quede a
+     la derecha del título en vez de forzar una fila propia — en Monitoreo,
+     .view-header-top ya hace este mismo trabajo puertas adentro (título +
+     botones de admin) y pasa a ser, ella misma, uno de los dos hijos de
+     este flex en vez de el único. */
+  .view-header{margin-bottom:1.5rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .view-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;flex:1;}
   .admin-header-actions{display:flex;gap:.6rem;flex-wrap:wrap;}
+  /* Botón real (no un ícono chico que se pierde entre los demás del
+     encabezado) para volver al login — se repite una vez por vista (Mesa/
+     Progreso/Monitoreo) para seguir visible sin importar en cuál estés. */
+  .view-back-btn{flex:none;}
   .view-title{font-size:1.55rem;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:.5rem;}
   /* Elemento decorativo de marca ("Elementos", color de fábrica sin tocar) — siempre en el mismo
      contexto: justo antes del texto de un encabezado principal, nunca en otro lugar del sitio. */

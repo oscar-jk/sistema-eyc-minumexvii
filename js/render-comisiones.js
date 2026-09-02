@@ -390,6 +390,7 @@
       if(tile){
         var tileId = tile.dataset.id;
         confirmDiscardIfDirty(function(){
+          pushNavSnapshot_();
           comisionDetailId = tileId;
           comisionDetailTab = 'mesa';
           selTaller = '';
@@ -403,6 +404,7 @@
       }
       if(e.target.closest('#btn-comision-back')){
         confirmDiscardIfDirty(function(){
+          pushNavSnapshot_();
           comisionDetailId = null;
           renderComisiones();
         });
@@ -412,6 +414,7 @@
       if(subtabBtn){
         var subtab = subtabBtn.dataset.subtab;
         confirmDiscardIfDirty(function(){
+          pushNavSnapshot_();
           comisionDetailTab = subtab;
           renderComisiones();
         });

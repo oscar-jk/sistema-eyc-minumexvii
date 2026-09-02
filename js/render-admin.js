@@ -41,6 +41,7 @@
     var btns = document.querySelectorAll('[data-admin-subtab]');
     for(var i=0;i<btns.length;i++){
       btns[i].addEventListener('click', function(e){
+        pushNavSnapshot_();
         adminDetailTab = e.currentTarget.dataset.adminSubtab;
         renderAdmin();
       });
