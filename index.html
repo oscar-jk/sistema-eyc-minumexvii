@@ -1505,16 +1505,29 @@
       }).join('');
       return '<div class="comision-roles comision-roles-ro">' + rowsRO + '</div>';
     }
+    var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); }).length;
     var fields = ROLES.map(function(r){
       return '<label class="role-field">' +
         '<span class="role-label">' + escapeHTML(r.label) + '</span>' +
         '<input type="text" class="field-input" data-role="' + r.key + '" value="' + escapeHTML(com.roles[r.key] || '') + '" placeholder="Nombre completo">' +
         '</label>';
     }).join('');
-    return '<div class="comision-roles">' + fields + '</div>' +
+    // Sólo se muestra mientras falte al menos un cargo: orienta a quien
+    // llega por primera vez sin cubrir la pantalla de texto una vez que
+    // la comisión ya quedó armada.
+    var intro = asignados < ROLES.length
+      ? '<p class="hint-text" style="margin-bottom:1rem;">Escribe el nombre completo de quien ocupa cada cargo. Puedes guardar aunque falten algunos — vuelves luego y completas el resto. <strong>' + asignados + ' de ' + ROLES.length + '</strong> cargos asignados.</p>'
+      : '';
+    // El hint de "renombrar corrige un error de tipeo" sólo tiene sentido
+    // cuando YA hay alguien en el cargo (edición). Mostrarlo sobre un
+    // formulario recién en blanco confunde más de lo que ayuda.
+    var saveHint = asignados > 0
+      ? 'Renombrar corrige un error de tipeo. Si la persona cambió, pide a Subsecretaría que la sustituya desde Monitoreo — así su historial no se mezcla con el de la nueva.'
+      : 'Podrás editar estos nombres cuando quieras — no es necesario completarlos todos de una vez.';
+    return intro + '<div class="comision-roles">' + fields + '</div>' +
       '<div class="form-save-bar form-save-bar-sticky">' +
         '<button type="button" class="btn btn-primary row-save-btn" data-action="save-mesa">Guardar mesa directiva</button>' +
-        '<span class="form-save-hint">Renombrar corrige un error de tipeo. Si la persona cambió, pide a Subsecretaría que la sustituya desde Monitoreo — así su historial no se mezcla con el de la nueva.</span>' +
+        '<span class="form-save-hint">' + saveHint + '</span>' +
       '</div>';
   }
 
