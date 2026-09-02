@@ -33,11 +33,15 @@
     --bg:#f4f7fc;
     --surface:#ffffff;
     --surface-2:#e9f4ff;
-    --border:#dbe4f0;
-    --border-strong:rgba(7,39,79,.22);
+    --border:#c5d2e6;
+    --border-strong:rgba(7,39,79,.4);
     --text:#07274f;
-    --text-secondary:#4f637f;
-    --text-tertiary:rgba(79,99,127,.72);
+    /* Antes #4f637f/rgba(79,99,127,.72): apenas pasaban 3.2:1 sobre --bg,
+       por debajo del mínimo de 4.5:1 de WCAG AA para texto normal — de ahí
+       que las descripciones/ayudas ("hint-text") se leyeran "perdidas" en
+       claro. Ahora sólidos y con contraste real (~7.8:1 / ~4.9:1). */
+    --text-secondary:#3c4f68;
+    --text-tertiary:#5c6f8c;
     --accent-solid:#00b5ff;
     --accent-solid-2:#0043c5;
     --accent-ink:#ffffff;
@@ -141,7 +145,8 @@
 
   .nav-tabs{max-width:920px;margin:0 auto;padding:0 1.25rem;display:flex;gap:.25rem;overflow-x:auto;scrollbar-width:none;}
   .nav-tabs::-webkit-scrollbar{display:none;}
-  .nav-tab{flex:none;background:transparent;border:none;color:var(--text-tertiary);font-size:.98rem;font-weight:500;padding:.7rem .8rem;cursor:pointer;position:relative;transition:color .15s var(--ease);}
+  .nav-tab{flex:none;display:inline-flex;align-items:center;gap:.4rem;background:transparent;border:none;color:var(--text-tertiary);font-size:.98rem;font-weight:500;padding:.7rem .8rem;cursor:pointer;position:relative;transition:color .15s var(--ease);}
+  .nav-tab svg{width:17px;height:17px;flex:none;}
   .nav-tab::after{content:'';position:absolute;left:.8rem;right:.8rem;bottom:0;height:2px;background:transparent;transition:background .15s var(--ease);}
   .nav-tab:hover{color:var(--text);}
   .nav-tab.is-active{color:var(--text);font-weight:600;}
@@ -604,9 +609,9 @@
     </div>
   </div>
   <nav class="nav-tabs" role="tablist" aria-label="Secciones" id="nav-tabs" hidden>
-    <button class="nav-tab is-active" role="tab" id="tab-comisiones" data-view="comisiones" aria-selected="true" aria-controls="view-comisiones">Comisiones</button>
-    <button class="nav-tab" role="tab" id="tab-progreso" data-view="progreso" aria-selected="false" aria-controls="view-progreso">Progreso</button>
-    <button class="nav-tab" role="tab" id="tab-admin" data-view="admin" aria-selected="false" aria-controls="view-admin">Monitoreo</button>
+    <button class="nav-tab is-active" role="tab" id="tab-comisiones" data-view="comisiones" aria-selected="true" aria-controls="view-comisiones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 18v-7"></path><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"></path><path d="M14 18v-7"></path><path d="M18 18v-7"></path><path d="M3 22h18"></path><path d="M6 18v-7"></path></svg>Comisiones</button>
+    <button class="nav-tab" role="tab" id="tab-progreso" data-view="progreso" aria-selected="false" aria-controls="view-progreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"></path><path d="M16 7h6v6"></path></svg>Progreso</button>
+    <button class="nav-tab" role="tab" id="tab-admin" data-view="admin" aria-selected="false" aria-controls="view-admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>Monitoreo</button>
   </nav>
 </header>
 
