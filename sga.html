@@ -116,58 +116,61 @@
     </div>
     <div class="header-right">
       <p class="header-counter" id="header-counter">0 evaluaciones registradas</p>
+      <div class="session-badge" id="session-badge">
+        <span><span class="session-badge-role" id="session-badge-role"></span><span id="session-badge-detail"></span></span>
+        <button type="button" class="session-logout-btn" id="btn-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 16l4-4-4-4M20 12H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <button type="button" class="help-btn" id="btn-back" aria-label="Volver" title="Volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+      </button>
+      <button type="button" class="help-btn" id="help-btn" aria-label="Cómo funciona este panel" title="Cómo funciona este panel">?</button>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro/oscuro">
         <svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 12H2.1M21.9 12h-2.4M6.3 6.3 4.6 4.6M19.4 19.4l-1.7-1.7M17.7 6.3l1.7-1.7M4.6 19.4l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         <svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
       </button>
     </div>
   </div>
+  <nav class="nav-tabs" role="tablist" aria-label="Secciones" id="nav-tabs">
+    <button class="nav-tab" role="tab" id="tab-comisiones" data-view="comisiones" aria-selected="false" aria-controls="view-comisiones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 18v-7"></path><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"></path><path d="M14 18v-7"></path><path d="M18 18v-7"></path><path d="M3 22h18"></path><path d="M6 18v-7"></path></svg>Comisiones</button>
+    <button class="nav-tab" role="tab" id="tab-progreso" data-view="progreso" aria-selected="false" aria-controls="view-progreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"></path><path d="M16 7h6v6"></path></svg>Progreso</button>
+    <button class="nav-tab is-active" role="tab" id="tab-admin" data-view="admin" aria-selected="true" aria-controls="view-admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>Monitoreo</button>
+  </nav>
 </header>
 
 <main class="container" id="main">
 
-  <section id="view-login" class="view is-active" role="tabpanel">
-    <div class="login-shell">
-      <div class="login-intro">
-        <img class="login-lockup login-lockup-light" src="assets/img/login-lockup-light.png" width="751" height="85" alt="MINUME XVII Período de Sesiones">
-        <img class="login-lockup login-lockup-dark" src="assets/img/login-lockup-dark.png" width="751" height="85" alt="MINUME XVII Período de Sesiones">
-        <p class="login-eyebrow">Acceso — versión de prueba</p>
-        <h1 class="login-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-1"></use></svg>¿Quién eres?</h1>
-        <p class="login-desc">Elige tu acceso para continuar. Este login es simulado: no pide contraseña.</p>
-      </div>
+  <section id="view-comisiones" class="view" role="tabpanel" aria-labelledby="tab-comisiones">
+    <div class="view-header">
+      <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-2"></use></svg>Comisiones</h1>
+      <p class="view-desc" id="comisiones-desc">Elige una comisión para entrar: ahí configuras su mesa directiva, sus actividades y las evaluaciones.</p>
+    </div>
+    <div id="comisiones-content"></div>
+  </section>
 
-      <div class="access-grid">
-        <div class="access-card">
-          <span class="access-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
-          </span>
-          <h2 class="access-title">Evaluación y Control</h2>
-          <p class="access-desc">Evalúa las actividades de tu comisión y configura su mesa directiva.</p>
-          <label class="select-field access-select-field">Tu comisión<div class="select-wrap"><select id="login-comision-select">
-            <option value="">Selecciona tu comisión…</option>
-          </select></div></label>
-          <button type="button" class="access-cta" id="btn-login-eyc" disabled>Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+  <section id="view-progreso" class="view" role="tabpanel" aria-labelledby="tab-progreso">
+    <div class="view-header">
+      <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-3"></use></svg>Progreso</h1>
+      <p class="view-desc">Estado de las evaluaciones por comisión y actividad. Toca una estrella para entrar directo a completar una pendiente.</p>
+    </div>
+    <div id="progreso-content"></div>
+  </section>
+
+  <section id="view-admin" class="view is-active" role="tabpanel" aria-labelledby="tab-admin">
+    <div class="view-header">
+      <div class="view-header-top">
+        <div>
+          <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-4"></use></svg>Monitoreo</h1>
+          <p class="view-desc" id="admin-view-desc">Panel de Secretaría.</p>
         </div>
-
-        <div class="access-card">
-          <span class="access-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18v-7"></path><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"></path><path d="M14 18v-7"></path><path d="M18 18v-7"></path><path d="M3 22h18"></path><path d="M6 18v-7"></path></svg>
-          </span>
-          <h2 class="access-title">Subsecretario/a</h2>
-          <p class="access-desc">Monitorea el semáforo de cada voluntario y registra los cortes de seguimiento.</p>
-          <button type="button" class="access-cta" data-login-role="subse">Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
-        </div>
-
-        <div class="access-card">
-          <span class="access-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
-          </span>
-          <h2 class="access-title">Secretario/a General</h2>
-          <p class="access-desc">Decide la continuidad de los casos que llegan de Subsecretaría y ve el panel general de todas las comisiones.</p>
-          <button type="button" class="access-cta" data-login-role="sg">Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+        <div class="admin-header-actions">
+          <button type="button" class="btn btn-primary" id="btn-seed-demo">Cargar datos de ejemplo completos</button>
+          <button type="button" class="btn btn-secondary" id="btn-reset-demo">Restablecer datos de prueba</button>
         </div>
       </div>
     </div>
+    <div id="admin-content"></div>
   </section>
 </main>
 
@@ -184,6 +187,56 @@
 
 <div class="toast-wrap" id="toast-wrap" aria-live="polite"></div>
 
+<div class="modal-overlay" id="discard-modal" role="alertdialog" aria-modal="true" aria-labelledby="discard-modal-title">
+  <div class="modal-box">
+    <h3 id="discard-modal-title">Cambios sin guardar</h3>
+    <p>Tienes cambios sin guardar en esta sección. Si continúas, se perderán.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="discard-modal-cancel">Seguir editando</button>
+      <button type="button" class="btn btn-reject" id="discard-modal-confirm">Descartar y continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación genérico, reutilizado por varias acciones (rename
+     con historial, cerrar actividad, etc.) en vez de confirm() nativo. -->
+<div class="modal-overlay" id="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+  <div class="modal-box">
+    <h3 id="confirm-modal-title"></h3>
+    <p id="confirm-modal-body"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="confirm-modal-cancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="confirm-modal-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Onboarding por rol: se abre solo una vez, la primera vez que este
+     navegador entra con cada rol (ver ONBOARDING_SEEN_KEY) — después queda
+     disponible en cualquier momento desde el botón "?" del encabezado. -->
+<div class="modal-overlay" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-modal-title">
+  <div class="modal-box modal-box-md">
+    <button type="button" class="modal-close" id="onboarding-modal-close" aria-label="Cerrar">&times;</button>
+    <h3 id="onboarding-modal-title"></h3>
+    <p id="onboarding-modal-intro"></p>
+    <ol class="onboarding-list" id="onboarding-modal-list"></ol>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary" id="onboarding-modal-ok">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- Histórico de un voluntario, accesible en un clic desde cualquier panel
+     donde aparece su nombre — mezcla evaluaciones de taller y comentarios
+     de corte, más reciente primero. -->
+<div class="modal-overlay" id="historico-modal" role="dialog" aria-modal="true" aria-labelledby="historico-modal-title">
+  <div class="modal-box modal-box-lg">
+    <button type="button" class="modal-close" id="historico-modal-close" aria-label="Cerrar">&times;</button>
+    <div id="historico-modal-content"></div>
+  </div>
+</div>
+
+<script>var EXPECTED_ROLE = 'sg';</script>
 <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
 <script src="js/constants.js"></script>
 <script src="js/state.js"></script>

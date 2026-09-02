@@ -8,43 +8,32 @@
     }).join('');
   }
 
-  function applyRoleVisibility(){
-    var adminTab = document.getElementById('tab-admin');
-    if(adminTab) adminTab.hidden = !canSeeAdmin();
-  }
+  // Cada rol vive en su propia página desde acá — login/eyc/subse/sga.html,
+  // ver EXPECTED_ROLE (declarado inline en cada página de rol, antes de
+  // estos <script src>) y el guard en init() (js/main.js). "Comisiones"
+  // sigue siendo el nombre interno del rol de Secretario General en el
+  // resto del código — solo el archivo se llama sga.html.
+  var ROLE_PAGES = { eyc:'eyc.html', subse:'subse.html', sg:'sga.html' };
 
   function doLogin(role, comisionId){
     session = { role: role, comisionId: comisionId || null };
     saveSession();
-    enterApp();
+    location.href = ROLE_PAGES[role];
   }
 
   function doLogout(){
     confirmDiscardIfDirty(function(){
       session = null;
       try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
-      comisionDetailId = null;
-      comisionDetailTab = 'mesa';
-      var sections = document.querySelectorAll('.view');
-      for(var i=0;i<sections.length;i++) sections[i].classList.remove('is-active');
-      document.getElementById('view-login').classList.add('is-active');
-      document.getElementById('nav-tabs').hidden = true;
-      document.getElementById('session-badge').hidden = true;
-      document.getElementById('help-btn').hidden = true;
-      populateLoginComisiones();
-      var sel = document.getElementById('login-comision-select');
-      if(sel) sel.value = '';
-      var btnEyc = document.getElementById('btn-login-eyc');
-      if(btnEyc) btnEyc.disabled = true;
+      location.href = 'index.html';
     });
   }
 
+  // Solo se llama en las páginas de rol (ver init() en main.js) — la
+  // sección/pestaña por defecto de cada una ya viene marcada is-active en
+  // el propio HTML, así que no hace falta tocar session-badge/nav-tabs/
+  // help-btn acá: son siempre visibles en esas 3 páginas, por diseño.
   function enterApp(){
-    document.getElementById('view-login').classList.remove('is-active');
-    document.getElementById('nav-tabs').hidden = false;
-    applyRoleVisibility();
-    var badge = document.getElementById('session-badge');
-    badge.hidden = false;
     document.getElementById('session-badge-role').textContent = roleLabel(session.role);
     var detailEl = document.getElementById('session-badge-detail');
     if(session.role === 'eyc'){
@@ -56,7 +45,6 @@
     comisionDetailId = isEyc() ? session.comisionId : null;
     comisionDetailTab = canSeeCortes() ? comisionDetailTab : 'mesa';
     switchView(isSecretaria() ? 'admin' : 'comisiones');
-    document.getElementById('help-btn').hidden = false;
     var onboardingSeen = getOnboardingSeen();
     if(!onboardingSeen[session.role]){
       marcarOnboardingVisto(session.role);
@@ -64,18 +52,24 @@
     }
   }
 
+  // Se llama en las 4 páginas (ver init()) — cada bloque se null-guarda
+  // porque solo index.html tiene el formulario de login y solo las 3
+  // páginas de rol tienen el botón de logout.
   function bindLoginEvents(){
     var sel = document.getElementById('login-comision-select');
     var btnEyc = document.getElementById('btn-login-eyc');
-    sel.addEventListener('change', function(e){ btnEyc.disabled = !e.target.value; });
-    btnEyc.addEventListener('click', function(){
-      if(!sel.value) return;
-      doLogin('eyc', sel.value);
-    });
+    if(sel && btnEyc){
+      sel.addEventListener('change', function(e){ btnEyc.disabled = !e.target.value; });
+      btnEyc.addEventListener('click', function(){
+        if(!sel.value) return;
+        doLogin('eyc', sel.value);
+      });
+    }
     var roleButtons = document.querySelectorAll('[data-login-role]');
     for(var i=0;i<roleButtons.length;i++){
       roleButtons[i].addEventListener('click', function(e){ doLogin(e.currentTarget.dataset.loginRole, null); });
     }
-    document.getElementById('btn-logout').addEventListener('click', doLogout);
+    var logoutBtn = document.getElementById('btn-logout');
+    if(logoutBtn) logoutBtn.addEventListener('click', doLogout);
   }
 

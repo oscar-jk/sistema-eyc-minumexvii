@@ -79,8 +79,12 @@
   }
 
   function bindProgresoEvents(){
-    document.getElementById('view-progreso').addEventListener('click', handleProgressAreaClick);
-    document.getElementById('view-admin').addEventListener('click', handleProgressAreaClick);
+    // view-progreso vive en las 3 páginas de rol (no en index.html);
+    // view-admin solo en subse.html/sga.html (no existe en eyc.html).
+    var vp = document.getElementById('view-progreso');
+    if(vp) vp.addEventListener('click', handleProgressAreaClick);
+    var va = document.getElementById('view-admin');
+    if(va) va.addEventListener('click', handleProgressAreaClick);
   }
 
   /* ---------- Admin ---------- */

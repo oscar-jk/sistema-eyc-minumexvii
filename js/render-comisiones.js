@@ -275,6 +275,7 @@
 
   function bindComisionesEvents(){
     var el = document.getElementById('view-comisiones');
+    if(!el) return; // no existe en index.html (login) — bindGlobalEvents() se llama en las 4 páginas
 
     function markRowDirty(formId, row){
       markDirty(formId);

@@ -111,6 +111,11 @@
      clase propia: no comparte semántica con el de tema, sólo el aspecto. */
   .help-btn{width:36px;height:36px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;font-weight:700;font-size:.92rem;transition:border-color .15s var(--ease),color .15s var(--ease);}
   .help-btn:hover{border-color:var(--border-strong);color:var(--text);}
+  /* El botón "← Volver" (id=btn-back) reusa esta clase con un ícono SVG en
+     vez del texto "?" — sin esto, un <svg> sin width/height propio cae al
+     tamaño intrínseco por defecto del navegador (enorme) en vez de encajar
+     en el círculo de 36px. */
+  .help-btn svg{width:17px;height:17px;flex:none;}
   .theme-icon-dark{display:none;}
   :root[data-theme="dark"] .theme-icon-light{display:none;}
   :root[data-theme="dark"] .theme-icon-dark{display:block;}

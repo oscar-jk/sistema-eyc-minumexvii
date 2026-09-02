@@ -18,6 +18,27 @@
   }
 
   /* ---------- Login / logout ---------- */
+  // Ya no hay una sola página con todo: cada una de las 4 (login/eyc/subse/
+  // sga.html) solo trae el markup que le corresponde (ver assemble() del
+  // script que las generó). bindGlobalEvents() se llama igual en las 4, así
+  // que cada listener se engancha con esta guarda — si el elemento no vive
+  // en la página actual, simplemente no hace nada, en vez de tirar un
+  // TypeError por leer .addEventListener de null.
+  function on_(id, evt, handler){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener(evt, handler);
+  }
+
+  // El botón "← Volver" (siempre visible en las 3 páginas de rol, ver
+  // header() del script generador): retrocede en el historial real del
+  // navegador si lo hay, y si no (URL abierta directo, marcador) cae a
+  // index.html — para que "volver" haga algo predecible sin importar cómo
+  // se llegó a la página.
+  function goBack_(){
+    if(window.history.length > 1) history.back();
+    else location.href = 'index.html';
+  }
+
   function bindGlobalEvents(){
     var tabs = document.querySelectorAll('.nav-tab');
     for(var i=0;i<tabs.length;i++){
@@ -26,29 +47,30 @@
         confirmDiscardIfDirty(function(){ switchView(view); });
       });
     }
-    document.getElementById('btn-reset-demo').addEventListener('click', resetToTestData);
-    document.getElementById('btn-seed-demo').addEventListener('click', seedRichDemoData);
-    document.getElementById('btn-cortes-config').addEventListener('click', abrirCortesConfigModal);
-    document.getElementById('cortes-config-modal-close').addEventListener('click', cerrarCortesConfigModal);
-    document.getElementById('help-btn').addEventListener('click', function(){
+    on_('btn-reset-demo', 'click', resetToTestData);
+    on_('btn-seed-demo', 'click', seedRichDemoData);
+    on_('btn-cortes-config', 'click', abrirCortesConfigModal);
+    on_('cortes-config-modal-close', 'click', cerrarCortesConfigModal);
+    on_('btn-back', 'click', goBack_);
+    on_('help-btn', 'click', function(){
       if(session) abrirOnboardingModal(session.role);
     });
-    document.getElementById('onboarding-modal-close').addEventListener('click', cerrarOnboardingModal);
-    document.getElementById('onboarding-modal-ok').addEventListener('click', cerrarOnboardingModal);
-    document.getElementById('onboarding-modal').addEventListener('click', function(e){
+    on_('onboarding-modal-close', 'click', cerrarOnboardingModal);
+    on_('onboarding-modal-ok', 'click', cerrarOnboardingModal);
+    on_('onboarding-modal', 'click', function(e){
       if(e.target.id === 'onboarding-modal') cerrarOnboardingModal();
     });
-    document.getElementById('discard-modal-cancel').addEventListener('click', function(){ resolveDiscardModal(false); });
-    document.getElementById('discard-modal-confirm').addEventListener('click', function(){ resolveDiscardModal(true); });
-    document.getElementById('confirm-modal-cancel').addEventListener('click', function(){ resolveConfirmModal(false); });
-    document.getElementById('confirm-modal-ok').addEventListener('click', function(){ resolveConfirmModal(true); });
-    document.getElementById('sustituir-modal-cancel').addEventListener('click', cerrarSustituirModal);
-    document.getElementById('sustituir-modal-ok').addEventListener('click', confirmarSustitucion);
-    document.getElementById('sustituir-modal-input').addEventListener('keydown', function(e){
+    on_('discard-modal-cancel', 'click', function(){ resolveDiscardModal(false); });
+    on_('discard-modal-confirm', 'click', function(){ resolveDiscardModal(true); });
+    on_('confirm-modal-cancel', 'click', function(){ resolveConfirmModal(false); });
+    on_('confirm-modal-ok', 'click', function(){ resolveConfirmModal(true); });
+    on_('sustituir-modal-cancel', 'click', cerrarSustituirModal);
+    on_('sustituir-modal-ok', 'click', confirmarSustitucion);
+    on_('sustituir-modal-input', 'keydown', function(e){
       if(e.key === 'Enter') confirmarSustitucion();
     });
-    document.getElementById('historico-modal-close').addEventListener('click', cerrarHistoricoModal);
-    document.getElementById('historico-modal').addEventListener('click', function(e){
+    on_('historico-modal-close', 'click', cerrarHistoricoModal);
+    on_('historico-modal', 'click', function(e){
       if(e.target.id === 'historico-modal') cerrarHistoricoModal();
     });
     document.addEventListener('click', function(e){
@@ -88,6 +110,15 @@
     // entrada exacto donde una carga remota del roster reemplazará la
     // carga local, sin que nada más en este archivo tenga que cambiar.
     state = await dataService.init();
+    // EXPECTED_ROLE se declara inline en eyc/subse/sga.html, antes de estos
+    // <script src> (no existe en index.html — el login nunca redirige solo,
+    // aunque ya haya sesión guardada, para que "← Volver" tenga a dónde
+    // volver de verdad en vez de rebotar para adelante otra vez).
+    var esPaginaDeRol = typeof EXPECTED_ROLE !== 'undefined';
+    if(esPaginaDeRol && (!session || session.role !== EXPECTED_ROLE)){
+      location.href = 'index.html';
+      return;
+    }
     initTheme();
     updateHeaderCounter();
     populateLoginComisiones();
@@ -97,7 +128,7 @@
     window.addEventListener('beforeunload', function(e){
       if(hasAnyDirty()){ e.preventDefault(); e.returnValue = ''; }
     });
-    if(session) enterApp();
+    if(esPaginaDeRol) enterApp();
   }
 
   document.addEventListener('DOMContentLoaded', init);

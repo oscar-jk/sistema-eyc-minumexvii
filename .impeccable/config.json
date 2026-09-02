@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "css/styles.css"
+        ],
+        "createdAt": "2026-09-02T19:54:54.322Z",
+        "reason": "Established MXVII brand accent-gradient treatment for comision sigla text, in place since early in this project's visual redesign (has its own @supports not(background-clip:text) fallback) -- intentional brand styling, not incidental AI gradient-text."
+      }
+    ]
+  }
+}
