@@ -33,7 +33,16 @@
     --accent-gradient:linear-gradient(135deg, var(--accent-solid-2), var(--accent-solid));
     /* En claro el fondo de página es plano; el degradado real solo aplica en oscuro. */
     --bg-gradient:var(--bg);
+    /* Alto real del footer fijo — una sola fuente de verdad para el padding
+       inferior del contenido y el offset de la barra de guardado sticky, así
+       nunca se desincronizan entre sí (el footer pasa a 2 líneas en móvil,
+       ver el media query de abajo). .container tiene su propio stacking
+       context (position:relative;z-index:1), así que un z-index ahí adentro
+       JAMÁS puede superar al del footer (z-index:15) — por eso esto se
+       resuelve con offset, no con z-index. */
+    --footer-h:60px;
   }
+  @media (max-width:600px){ :root{ --footer-h:96px; } }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       --bg:#061b3f;
@@ -130,7 +139,7 @@
   .nav-tab.is-active::after{background:var(--accent-gradient);}
 
   /* Layout */
-  .container{max-width:920px;margin:0 auto;padding:1.75rem 1.25rem 7.5rem;position:relative;z-index:1;}
+  .container{max-width:920px;margin:0 auto;padding:1.75rem 1.25rem calc(var(--footer-h) + 2rem);position:relative;z-index:1;}
   .view{display:none !important;}
   .view.is-active{display:block !important;animation:fadeIn .25s var(--ease);}
   @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
@@ -183,6 +192,7 @@
   .role-label{font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-tertiary);font-weight:600;}
 
   .field-input{background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:inherit;font-size:1rem;padding:.4rem .05rem;width:100%;border-radius:0;min-height:36px;}
+  textarea.field-input{resize:vertical;line-height:1.5;}
   .field-input:hover{border-bottom-color:var(--border-strong);}
   .field-input:focus{outline:none;border-bottom-color:var(--accent-solid);}
   .field-input::placeholder{color:var(--text-tertiary);}
@@ -316,8 +326,8 @@
     .footer-inner{flex-direction:column;gap:.4rem;padding:.6rem 1rem;}
     .footer-divider{display:none;}
     .footer-logo{height:32px;}
-    .container{padding-bottom:9.5rem;}
-    .login-shell{padding-bottom:9.5rem;}
+    .container{padding-bottom:calc(var(--footer-h) + 2rem);}
+    .login-shell{padding-bottom:calc(var(--footer-h) + 2rem);}
   }
   .footer-logo-dark{display:none;}
   :root[data-theme="dark"] .footer-logo-light{display:none;}
@@ -335,6 +345,72 @@
   .modal-box p{color:var(--text-secondary);font-size:.92rem;line-height:1.5;margin-bottom:1.25rem;}
   .modal-actions{display:flex;gap:.6rem;justify-content:flex-end;flex-wrap:wrap;}
   @media (max-width:420px){.modal-actions{flex-direction:column-reverse;}.modal-actions .btn{width:100%;}}
+  /* Variante grande del modal (Histórico de voluntario) — a nivel de body,
+     igual que discard-modal: si se inyectara dentro de .container heredaría
+     su stacking context y quedaría detrás del footer pese al z-index:200. */
+  .modal-box-lg{max-width:560px;max-height:calc(100vh - 4rem);overflow-y:auto;position:relative;padding-top:2.75rem;}
+  .modal-close{position:absolute;top:.9rem;right:.9rem;width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--text-secondary);font-size:1.3rem;line-height:1;cursor:pointer;}
+  .modal-close:hover{color:var(--text);}
+
+  /* Barra de guardado fija — se usa en Evaluar (EyC) para que "Guardar" esté
+     siempre visible sin tener que bajar hasta el final del formulario.
+     bottom usa --footer-h (no z-index: .container ya tiene su propio
+     stacking context, ver la nota junto a --footer-h). */
+  .sticky-save-bar{position:sticky;bottom:calc(var(--footer-h) + .6rem);z-index:5;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:.7rem .9rem;margin-top:1.2rem;box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .15s var(--ease),transform .15s var(--ease);}
+  .sticky-save-bar.is-dirty{opacity:1;pointer-events:auto;transform:translateY(0);}
+
+  /* Acordeón de dimensiones (evaluación del EyC) */
+  .dim-accordion{border:1px solid var(--border);border-radius:var(--radius-md);margin-top:.75rem;overflow:hidden;}
+  .dim-accordion summary{list-style:none;cursor:pointer;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:var(--surface-2);}
+  .dim-accordion summary::-webkit-details-marker{display:none;}
+  .dim-accordion + .dim-accordion{border-top:none;}
+  .dim-accordion-title{display:flex;align-items:center;gap:.5rem;font-weight:600;}
+  .dim-accordion-chip{font-size:.78rem;font-weight:600;padding:.2rem .55rem;border-radius:999px;white-space:nowrap;}
+  .dim-accordion-chip.is-ok{background:rgba(63,167,109,.16);color:#3fa76d;}
+  .dim-accordion-chip.is-pending{background:rgba(217,164,65,.18);color:#d9a441;}
+  .dim-accordion-body{padding:0 1rem 1rem;}
+
+  /* Slider de puntos manuales (B/D/E/F) */
+  .dim-puntos{display:flex;flex-direction:column;gap:.4rem;margin:.6rem 0 1rem;}
+  .dim-puntos-head{display:flex;align-items:center;justify-content:space-between;font-size:.86rem;color:var(--text-secondary);}
+  .dim-puntos-valor{font-weight:600;color:var(--text);}
+  .dim-puntos input[type=range]{width:100%;accent-color:var(--accent-solid-2);height:32px;}
+  .crit-comment.is-required{border-bottom-color:var(--danger);}
+  .crit-required-hint{font-size:.78rem;color:var(--danger);margin-top:-.4rem;}
+
+  /* Barra de distribución de semáforo (panel general del SGA) */
+  .semaforo-bar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:var(--surface-2);}
+  .semaforo-bar > span{height:100%;}
+  .semaforo-bar-verde{background:#3fa76d;}
+  .semaforo-bar-amarillo{background:#d9a441;}
+  .semaforo-bar-rojo{background:#c1473f;}
+  .semaforo-bar-gris{background:#8b8f98;}
+  .semaforo-legend{display:flex;gap:.9rem;flex-wrap:wrap;font-size:.82rem;color:var(--text-tertiary);margin-top:.4rem;}
+  .semaforo-legend span{display:inline-flex;align-items:center;gap:.35rem;}
+
+  .continuidad-badge{font-size:.78rem;font-weight:600;padding:.2rem .55rem;border-radius:999px;white-space:nowrap;}
+  .continuidad-continua{background:rgba(63,167,109,.16);color:#3fa76d;}
+  .continuidad-no-continua{background:rgba(193,71,63,.16);color:#c1473f;}
+
+  .hist-link{background:none;border:none;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;transition:text-decoration-color .15s var(--ease);}
+  .hist-link:hover{text-decoration-color:currentColor;color:var(--accent-text);}
+
+  .miembro-row-ro{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.7rem 0;border-top:1px solid var(--border);}
+  .miembro-row-ro:first-child{border-top:none;}
+  .miembro-row-ro-main{display:flex;flex-direction:column;gap:.15rem;flex:1;min-width:0;}
+  .miembro-row-ro-nombre{font-size:1rem;font-weight:500;}
+
+  .btn-sm{padding:.4rem .75rem;font-size:.86rem;min-height:36px;}
+
+  .grupo-semaforo{margin-bottom:1.4rem;}
+  .grupo-semaforo-head{display:flex;align-items:center;gap:.5rem;font-weight:600;margin-bottom:.5rem;}
+  .grupo-semaforo-count{color:var(--text-tertiary);font-weight:400;font-size:.9rem;}
+  .persona-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:.9rem 1rem;margin-bottom:.6rem;}
+  .persona-card-head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;}
+  .persona-card-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem;}
+
+  .chip-filtro{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .8rem;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--text-secondary);font-size:.88rem;font-weight:600;cursor:pointer;min-height:36px;}
+  .chip-filtro.is-active{background:var(--surface-2);color:var(--text);border-color:var(--accent-solid);}
 
   /* Toast */
   .toast-wrap{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);display:flex;flex-direction:column;gap:.5rem;z-index:50;pointer-events:none;}
@@ -344,7 +420,7 @@
   @media (max-width:560px){.toast-wrap{left:1rem;right:1rem;transform:none;}}
 
   /* Login / sesión simulada — tarjetas de acceso estilo sgaminume.com */
-  .login-shell{min-height:calc(100vh - 150px);max-width:960px;margin:0 auto;padding:3rem 1.25rem 7.5rem;}
+  .login-shell{min-height:calc(100vh - 150px);max-width:960px;margin:0 auto;padding:3rem 1.25rem calc(var(--footer-h) + 2rem);}
   .login-intro{max-width:520px;margin-bottom:2rem;}
   .login-eyebrow{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-tertiary);font-weight:600;margin-bottom:.4rem;}
   .login-title{font-family:'Libre Baskerville',Georgia,serif;font-style:italic;font-weight:400;font-size:1.9rem;letter-spacing:-.01em;display:flex;align-items:center;gap:.55rem;}
@@ -372,12 +448,7 @@
     .session-badge{border-radius:var(--radius-md);font-size:.78rem;flex:1 1 auto;}
   }
 
-  /* Aprobación de cortes */
-  .aprobacion-badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;font-weight:600;padding:.35rem .7rem;border-radius:999px;border:1px solid var(--border);}
-  .aprobacion-pendiente{color:#a9762b;border-color:rgba(169,118,43,.4);}
-  .aprobacion-aprobado{color:#3fa76d;border-color:rgba(63,167,109,.4);}
-  .aprobacion-rechazado{color:var(--danger);border-color:rgba(179,65,61,.4);}
-  .aprobacion-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem;}
+  /* Decisión de continuidad (SG) */
   .btn-approve{background:#3fa76d;color:#06210f;}
   .btn-approve:hover{filter:brightness(1.08);}
   .btn-reject{background:transparent;border-color:var(--danger);color:var(--danger);}
@@ -500,7 +571,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18v-7"></path><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"></path><path d="M14 18v-7"></path><path d="M18 18v-7"></path><path d="M3 22h18"></path><path d="M6 18v-7"></path></svg>
           </span>
           <h2 class="access-title">Subsecretario/a</h2>
-          <p class="access-desc">Evalúa los cortes de cada comisión; quedan pendientes de aprobación del SG.</p>
+          <p class="access-desc">Monitorea el semáforo de cada voluntario y registra los cortes de seguimiento.</p>
           <button type="button" class="access-cta" data-login-role="subse">Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
         </div>
 
@@ -509,7 +580,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
           </span>
           <h2 class="access-title">Secretario/a General</h2>
-          <p class="access-desc">Aprueba los cortes y monitorea todas las comisiones desde un solo panel.</p>
+          <p class="access-desc">Decide la continuidad de los casos que llegan de Subsecretaría y ve el panel general de todas las comisiones.</p>
           <button type="button" class="access-cta" data-login-role="sg">Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
         </div>
       </div>
@@ -537,7 +608,7 @@
       <div class="view-header-top">
         <div>
           <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-4"></use></svg>Monitoreo</h1>
-          <p class="view-desc" id="admin-view-desc">Panel de Secretaría: semáforo por corte, aprobaciones pendientes, progreso de actividades y todas las evaluaciones, de todas las comisiones.</p>
+          <p class="view-desc" id="admin-view-desc">Panel de Secretaría.</p>
         </div>
         <div class="admin-header-actions">
           <button type="button" class="btn btn-primary" id="btn-seed-demo">Cargar datos de ejemplo completos</button>
@@ -574,12 +645,54 @@
   </div>
 </div>
 
+<!-- Modal de confirmación genérico, reutilizado por varias acciones (rename
+     con historial, cerrar actividad, etc.) en vez de confirm() nativo. -->
+<div class="modal-overlay" id="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+  <div class="modal-box">
+    <h3 id="confirm-modal-title"></h3>
+    <p id="confirm-modal-body"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="confirm-modal-cancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="confirm-modal-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sustituir un miembro de mesa (acción del Subsecretario): la persona
+     saliente queda archivada con su historial intacto, la entrante arranca
+     en cero. Es la única vía real de reemplazo — un rename en Mesa
+     directiva se trata siempre como corrección de tipeo. -->
+<div class="modal-overlay" id="sustituir-modal" role="alertdialog" aria-modal="true" aria-labelledby="sustituir-modal-title">
+  <div class="modal-box">
+    <h3 id="sustituir-modal-title">Sustituir miembro</h3>
+    <p id="sustituir-modal-body" class="hint-text"></p>
+    <label class="role-field" style="margin:.9rem 0;">
+      <span class="role-label">Nombre de la persona entrante</span>
+      <input type="text" class="field-input" id="sustituir-modal-input" placeholder="Nombre completo">
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="sustituir-modal-cancel">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="sustituir-modal-ok">Sustituir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Histórico de un voluntario, accesible en un clic desde cualquier panel
+     donde aparece su nombre — mezcla evaluaciones de taller y comentarios
+     de corte, más reciente primero. -->
+<div class="modal-overlay" id="historico-modal" role="dialog" aria-modal="true" aria-labelledby="historico-modal-title">
+  <div class="modal-box modal-box-lg">
+    <button type="button" class="modal-close" id="historico-modal-close" aria-label="Cerrar">&times;</button>
+    <div id="historico-modal-content"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
 <script>
 (function(){
   'use strict';
 
-  var STORAGE_KEY = 'eyc_rubrica_v3';
+  var STORAGE_KEY = 'eyc_rubrica_v4';
   var THEME_KEY = 'eyc_rubrica_theme';
 
   var ROLES = [
@@ -612,34 +725,42 @@
 
   // Rúbrica verbatim. No existe dimensión C en la fuente original.
   // El criterio E1 llegó truncado en la fuente ("...creatividad,"); se conserva literal.
+  // `favorable` marca qué respuesta ('si'|'no') es la deseable en cada criterio —
+  // B1 está redactado en negativo ("Mostró desconocimiento…"), así que ahí la
+  // respuesta favorable es 'no'; en los demás es 'si'. Se usa para el puntaje de
+  // la dimensión A y para saber cuándo el comentario es obligatorio (ver
+  // esFavorable/computePuntaje más abajo).
   var RUBRICA = [
     { dim:'A', titulo:'Cumplimiento y responsabilidad', items:[
-      { id:'A1', texto:'Asiste al 100% de las capacitaciones y sesiones del evento' },
-      { id:'A2', texto:'Asiste puntualmente a las capacitaciones y sesiones del evento' },
-      { id:'A3', texto:'Hace sus entregas a tiempo' }
+      { id:'A1', texto:'Asiste al 100% de las capacitaciones y sesiones del evento', favorable:'si' },
+      { id:'A2', texto:'Asiste puntualmente a las capacitaciones y sesiones del evento', favorable:'si' },
+      { id:'A3', texto:'Hace sus entregas a tiempo', favorable:'si' }
     ]},
     { dim:'B', titulo:'Competencia académica y funcional', items:[
-      { id:'B1', texto:'Mostró desconocimiento sobre el procedimiento parlamentario, el tema o errores de redacción' }
+      { id:'B1', texto:'Mostró desconocimiento sobre el procedimiento parlamentario, el tema o errores de redacción', favorable:'no' }
     ]},
     { dim:'D', titulo:'Comunicación', items:[
-      { id:'D1', texto:'No se evidenciaron errores de comunicación interna/externa debido a falta de claridad, escucha y retroalimentación' }
+      { id:'D1', texto:'No se evidenciaron errores de comunicación interna/externa debido a falta de claridad, escucha y retroalimentación', favorable:'si' }
     ]},
     { dim:'E', titulo:'Gestión humana', items:[
-      { id:'E1', texto:'No se evidenciaron conflictos, problemas, creatividad' }
+      { id:'E1', texto:'No se evidenciaron conflictos, problemas, creatividad', favorable:'si' }
     ]},
     { dim:'F', titulo:'Ética, inclusión e innovación', items:[
-      { id:'F1', texto:'Se evidencia una conducta ética, transparente e inclusión, compromiso social, iniciativa, aprendizaje e innovación' }
+      { id:'F1', texto:'Se evidencia una conducta ética, transparente e inclusión, compromiso social, iniciativa, aprendizaje e innovación', favorable:'si' }
     ]}
   ];
   var TOTAL_CRIT = RUBRICA.reduce(function(n,d){ return n + d.items.length; }, 0);
-  var RUBRICA_FLAT_IDS = RUBRICA.reduce(function(acc,d){ return acc.concat(d.items.map(function(i){ return i.id; })); }, []);
+  var DIM_A = RUBRICA[0];                              // dim 'A' — auto-calculado, 85 pts
+  var DIMS_MANUALES = ['B','D','E','F'];                // asignación manual del EyC, 3.75 pts c/u (15 en total)
+  var MAX_PTS_DIM = 3.75;
 
-  // Puntos de control formales (independientes de los talleres), con su peso
-  // de referencia. Usan la misma rúbrica que las evaluaciones por taller.
+  // Puntos de control formales del Subsecretario — ya no son una rúbrica nueva,
+  // son un checkpoint de revisión (ver sección "Cortes"). `peso` no se usa más
+  // (el puntaje ahora sale de las evaluaciones por actividad, no de los cortes).
   var CORTES = [
-    { key:'corte1', label:'Corte 1', desc:'Preparación e incorporación', peso:25 },
-    { key:'corte2', label:'Corte 2', desc:'Desempeño al cierre del Día 2', peso:25 },
-    { key:'final', label:'Evaluación Final', desc:'Desempeño integral', peso:50 }
+    { key:'corte1', label:'Corte 1', desc:'Preparación e incorporación' },
+    { key:'corte2', label:'Corte 2', desc:'Desempeño al cierre del Día 2' },
+    { key:'final', label:'Evaluación Final', desc:'Desempeño integral' }
   ];
 
   var TIPOS_ACTIVIDAD = [
@@ -664,24 +785,31 @@
   var comisionDetailId = null;
   var comisionDetailTab = 'mesa';
   var selTaller = '';
-  var selRol = '';
+  // Identifica a la PERSONA (miembro.id), no el cargo — un rolKey puede
+  // apuntar a alguien distinto después de una sustitución, así que ya no
+  // sirve para saber a quién se está evaluando.
+  var selMiembroId = '';
   var selCorteTipo = '';
   var currentRespuestas = {};
   var currentComentarios = {};
+  var currentPuntosDim = {};
 
-  // Filtros de la sección "Rendimiento" en Admin (persisten mientras dura la sesión).
+  // Filtro de la sección "Rendimiento" en Admin (persiste mientras dura la
+  // sesión). Un solo select por semáforo — "Puntaje" quedaría redundante,
+  // son las mismas bandas.
   var adminBusqueda = '';
-  var adminFiltroPuntaje = 'todos';
   var adminFiltroSemaforo = 'todos';
 
-  // Filtros del Histórico de la comisión abierta — se reinician al entrar a otra comisión.
+  // Filtro del Histórico de la comisión abierta — se reinicia al entrar a
+  // otra comisión. Las filas son evaluaciones individuales (no el promedio
+  // de una persona), así que se filtran por su propio puntaje, no por un
+  // semáforo que no les aplica.
   var historicoBusqueda = '';
   var historicoFiltroPuntaje = 'todos';
-  var historicoFiltroSemaforo = 'todos';
   var particlesContainer = null;
 
   function loadState(){
-    var saved = { comisiones:[], talleres:[], evaluaciones:[], cortes:[], configCortes:{} };
+    var saved = { comisiones:[], talleres:[], evaluaciones:[], cortes:[], configCortes:{}, miembros:[] };
     var raw = null;
     try{
       raw = localStorage.getItem(STORAGE_KEY);
@@ -692,35 +820,78 @@
         saved.evaluaciones = parsed.evaluaciones || [];
         saved.cortes = parsed.cortes || [];
         saved.configCortes = parsed.configCortes || {};
+        saved.miembros = parsed.miembros || [];
       }
     }catch(e){
       console.warn('No se pudo leer el almacenamiento local', e);
     }
-    // Primer arranque (nada guardado todavía): se precargan los nombres de
-    // prueba. En cuanto se guarda cualquier cambio, dejan de usarse — a
-    // partir de ahí manda siempre lo que haya en localStorage.
+    // Primer arranque (nada guardado todavía): se precargan los miembros de
+    // prueba, uno por cargo y comisión, con id determinista (no uid() — esto
+    // nunca llama a saveState, así que un id aleatorio cambiaría en cada
+    // recarga hasta el primer guardado real). En cuanto se guarda cualquier
+    // cambio, dejan de usarse — a partir de ahí manda siempre lo guardado.
     var isFirstRun = !raw;
+    var miembros = saved.miembros;
+    if(isFirstRun){
+      miembros = [];
+      FIXED_COMISIONES.forEach(function(fc){
+        ROLES.forEach(function(r){
+          miembros.push({
+            id: 'mb_' + fc.id + '_' + r.key,
+            comisionId: fc.id,
+            rolKey: r.key,
+            nombre: (fc.rolesDemo && fc.rolesDemo[r.key]) || '',
+            activo: true,
+            desde: new Date().toISOString(),
+            hasta: '',
+            continuidad: ''
+          });
+        });
+      });
+    }
+    // com.roles ya no se guarda directamente — se deriva del miembro activo
+    // de cada cargo, así que el resto del código (que lee com.roles[key] en
+    // ~20 sitios) sigue funcionando sin cambios.
     var comisiones = FIXED_COMISIONES.map(function(fc){
-      var match = saved.comisiones.find(function(c){ return c.id === fc.id; });
-      var savedRoles = (match && match.roles) || {};
-      var demo = isFirstRun ? (fc.rolesDemo || {}) : {};
-      return {
-        id: fc.id,
-        nombre: fc.nombre,
-        sigla: fc.sigla,
-        roles: {
-          director: savedRoles.director || demo.director || '',
-          adjunto1: savedRoles.adjunto1 || demo.adjunto1 || '',
-          adjunto2: savedRoles.adjunto2 || demo.adjunto2 || '',
-          aprendiz: savedRoles.aprendiz || demo.aprendiz || ''
-        }
-      };
+      var roles = {};
+      ROLES.forEach(function(r){
+        var activo = miembros.find(function(m){ return m.comisionId === fc.id && m.rolKey === r.key && m.activo; });
+        roles[r.key] = activo ? activo.nombre : '';
+      });
+      return { id: fc.id, nombre: fc.nombre, sigla: fc.sigla, roles: roles };
     });
     var configCortes = {};
     CORTES.forEach(function(c){
       configCortes[c.key] = saved.configCortes[c.key] || { inicio: '' };
     });
-    return { comisiones: comisiones, talleres: saved.talleres, evaluaciones: saved.evaluaciones, cortes: saved.cortes, configCortes: configCortes };
+    return { comisiones: comisiones, talleres: saved.talleres, evaluaciones: saved.evaluaciones, cortes: saved.cortes, configCortes: configCortes, miembros: miembros };
+  }
+
+  /* ---------- Miembros (personas en un cargo de mesa directiva) ---------- */
+  // Miembro activo de un cargo — la fuente de verdad detrás de com.roles[rolKey].
+  function miembroActivo(comisionId, rolKey){
+    return state.miembros.find(function(m){ return m.comisionId === comisionId && m.rolKey === rolKey && m.activo; });
+  }
+  function miembroPorId(miembroId){
+    return state.miembros.find(function(m){ return m.id === miembroId; });
+  }
+  function nombreDeMiembro(miembroId){
+    var m = miembroPorId(miembroId);
+    return m ? m.nombre : '';
+  }
+  // Reconstruye com.roles para TODAS las comisiones a partir de state.miembros.
+  // Se llama después de cualquier cambio a state.miembros (alta, baja, rename).
+  function rederivarRoles(){
+    state.comisiones.forEach(function(com){
+      ROLES.forEach(function(r){
+        var activo = miembroActivo(com.id, r.key);
+        com.roles[r.key] = activo ? activo.nombre : '';
+      });
+    });
+  }
+  function miembroTieneHistorial(miembroId){
+    return state.evaluaciones.some(function(e){ return e.miembroId === miembroId; }) ||
+      state.cortes.some(function(c){ return c.miembroId === miembroId; });
   }
 
   function saveState(){
@@ -750,11 +921,13 @@
   function isSubse(){ return !!session && session.role === 'subse'; }
   function isSg(){ return !!session && session.role === 'sg'; }
   function isSecretaria(){ return isSubse() || isSg(); }
-  // Solo Subsecretaría/SG evalúan cortes; el EyC solo evalúa por actividad.
-  function canSeeCortes(){ return isSecretaria(); }
+  // Solo el Subsecretario escribe cortes (checkpoints con comentario). El
+  // EyC solo evalúa por actividad; el SG decide desde Monitoreo, no aquí.
+  function canSeeCortes(){ return isSubse(); }
   // Solo la Secretaría (Subse o SG) llega al panel de Monitoreo.
   function canSeeAdmin(){ return isSecretaria(); }
-  // El corte que evalúa el Subsecretario queda pendiente hasta que el SG lo apruebe.
+  // Solo el Secretario General decide continuidad sobre los casos que llegan
+  // del Subsecretario (semáforo amarillo/rojo con comentario obligatorio).
   function canApprove(){ return isSg(); }
 
   function roleLabel(role){
@@ -796,6 +969,65 @@
     }
   }
 
+  // Modal de confirmación genérico — reemplaza confirm() nativo en los
+  // flujos nuevos (rename con historial, cerrar actividad), por la misma
+  // razón que el de arriba: algunos navegadores/webviews lo suprimen sin
+  // avisar y el usuario se queda sin poder continuar ni saber por qué.
+  var pendingConfirm = null;
+  function showConfirmModal(title, body, okLabel, onConfirm){
+    document.getElementById('confirm-modal-title').textContent = title;
+    document.getElementById('confirm-modal-body').textContent = body;
+    document.getElementById('confirm-modal-ok').textContent = okLabel || 'Confirmar';
+    pendingConfirm = onConfirm;
+    document.getElementById('confirm-modal').classList.add('is-open');
+  }
+  function resolveConfirmModal(ok){
+    document.getElementById('confirm-modal').classList.remove('is-open');
+    var cb = pendingConfirm;
+    pendingConfirm = null;
+    if(ok && cb) cb();
+  }
+
+  // Sustituir miembro (acción del Subsecretario) — un input propio en vez de
+  // prompt() nativo, mismo motivo que el modal de arriba.
+  var pendingSustituir = null;
+  function abrirSustituirModal(comisionId, rolKey){
+    var com = state.comisiones.find(function(c){ return c.id === comisionId; });
+    var r = ROLES.find(function(x){ return x.key === rolKey; });
+    if(!com || !r) return;
+    var actual = miembroActivo(comisionId, rolKey);
+    document.getElementById('sustituir-modal-body').textContent = (actual && actual.nombre)
+      ? 'Reemplaza a ' + actual.nombre + ' (' + r.label + ', ' + com.sigla + '). Su historial queda archivado y consultable desde el Histórico; la persona entrante arranca sin evaluaciones.'
+      : 'Asigna a alguien nuevo como ' + r.label + ' en ' + com.sigla + '.';
+    var input = document.getElementById('sustituir-modal-input');
+    input.value = '';
+    pendingSustituir = { comisionId: comisionId, rolKey: rolKey };
+    document.getElementById('sustituir-modal').classList.add('is-open');
+    requestAnimationFrame(function(){ input.focus(); });
+  }
+  function cerrarSustituirModal(){
+    document.getElementById('sustituir-modal').classList.remove('is-open');
+    pendingSustituir = null;
+  }
+  function confirmarSustitucion(){
+    if(!pendingSustituir) return;
+    var nombre = document.getElementById('sustituir-modal-input').value.trim();
+    if(!nombre) return;
+    var actual = miembroActivo(pendingSustituir.comisionId, pendingSustituir.rolKey);
+    if(actual){ actual.activo = false; actual.hasta = new Date().toISOString(); }
+    state.miembros.push({
+      id: uid('mb'), comisionId: pendingSustituir.comisionId, rolKey: pendingSustituir.rolKey,
+      nombre: nombre, activo:true, desde:new Date().toISOString(), hasta:'', continuidad:''
+    });
+    rederivarRoles();
+    saveState();
+    updateHeaderCounter();
+    toast('Miembro sustituido');
+    cerrarSustituirModal();
+    if(document.getElementById('view-comisiones').classList.contains('is-active')) renderComisiones();
+    if(document.getElementById('view-admin').classList.contains('is-active')) renderAdmin();
+  }
+
   function escapeHTML(str){
     return String(str == null ? '' : str).replace(/[&<>"']/g, function(s){
       return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s];
@@ -833,37 +1065,68 @@
   }
 
   function updateHeaderCounter(){
-    var nTaller = state.evaluaciones.filter(function(e){ return Object.keys(e.respuestas || {}).length > 0; }).length;
-    var nCorte = state.cortes.filter(function(c){ return Object.keys(c.respuestas || {}).length > 0; }).length;
+    var nTaller = state.evaluaciones.filter(function(e){ return typeof e.puntajeTotal === 'number'; }).length;
+    var nCorte = state.cortes.length;
     var n = nTaller + nCorte;
     document.getElementById('header-counter').textContent = n === 1 ? '1 evaluación registrada' : (n + ' evaluaciones registradas');
   }
 
-  // Semáforo automático a partir de las respuestas de una evaluación (taller o corte):
-  // 0 respuestas = rojo (no evaluado). Mayoría de "No" = rojo (incumplimiento total).
-  // Algún "No" o preguntas sin responder = amarillo (falta parcial). Todo respondido y
-  // en "Sí" = verde.
-  function semaforoInfo(respuestas){
+  /* ---------- Puntaje y semáforo ----------
+     Dimensión A (A1-A3, sí/no): auto-calculada, proporcional sobre 85.
+     Dimensiones B/D/E/F (sí/no + puntos manuales 0-3.75 c/u, máx 15): el
+     EyC asigna los puntos; el sí/no sigue siendo obligatorio pero ya no
+     puntúa por sí mismo — solo dispara el comentario obligatorio cuando la
+     respuesta es la desfavorable de ese criterio (ver RUBRICA.favorable).
+     El semáforo ya NO se calcula por evaluación individual ni por corte:
+     es el promedio acumulado de puntajeTotal de todas las evaluaciones de
+     taller de un voluntario. Los cortes dejaron de tener rúbrica propia —
+     ver "Cortes" más abajo. */
+  function esFavorable(item, resp){
+    return resp === (item.favorable || 'si');
+  }
+  function calcPuntajeA(respuestas){
     respuestas = respuestas || {};
-    var claves = Object.keys(respuestas);
-    var respondidos = claves.length;
-    var noCount = claves.filter(function(k){ return respuestas[k] === 'no'; }).length;
-    if(respondidos === 0) return { key:'rojo', label:'Incumplimiento total — no evaluado' };
-    if(noCount >= Math.ceil(TOTAL_CRIT / 2)) return { key:'rojo', label:'Incumplimiento total' };
-    if(noCount > 0 || respondidos < TOTAL_CRIT) return { key:'amarillo', label:'Falta parcial' };
-    return { key:'verde', label:'Cumple' };
+    var items = DIM_A.items;
+    var ok = items.filter(function(i){ return esFavorable(i, respuestas[i.id]); }).length;
+    return (ok / items.length) * 85;
+  }
+  // Única fuente de verdad para el puntaje total — la usan tanto el guardado
+  // real (handleGuardarEvaluacion) como el sembrado de datos de ejemplo, para
+  // que nunca diverjan entre sí.
+  function computePuntaje(respuestas, puntosDim){
+    puntosDim = puntosDim || {};
+    var manual = DIMS_MANUALES.reduce(function(s,d){ return s + (Number(puntosDim[d]) || 0); }, 0);
+    return Math.round((calcPuntajeA(respuestas) + manual) * 100) / 100;
+  }
+  function semaforoLabel(key){
+    return key === 'verde' ? 'Cumple' : key === 'amarillo' ? 'Seguimiento' : key === 'rojo' ? 'En riesgo' : 'Sin evaluaciones';
+  }
+  // Nombre nuevo a propósito (no reemplaza semaforoInfo): cambia el tipo de
+  // argumento (miembroId, no respuestas), así que cualquier llamada vieja que
+  // se me escape falla ruidoso en vez de en silencio.
+  function semaforoDeMiembro(miembroId){
+    var evs = state.evaluaciones.filter(function(e){ return e.miembroId === miembroId && typeof e.puntajeTotal === 'number'; });
+    if(!evs.length) return { key:'gris', label:semaforoLabel('gris'), promedio:null, n:0 };
+    var prom = evs.reduce(function(s,e){ return s + e.puntajeTotal; }, 0) / evs.length;
+    prom = Math.round(prom * 10) / 10;
+    var key = prom < 50 ? 'rojo' : prom < 80 ? 'amarillo' : 'verde';
+    return { key:key, label:semaforoLabel(key), promedio:prom, n:evs.length };
+  }
+  // Punto + etiqueta + % + cantidad de evaluaciones — mismo patrón visual en
+  // todos los paneles donde aparece un voluntario, para leer el estado sin
+  // abrir el detalle. n se muestra siempre: una sola evaluación de 100 no
+  // debe leerse con la misma confianza que un promedio de diez.
+  function semaforoRowInnerHTML(miembroId){
+    var estado = semaforoDeMiembro(miembroId);
+    var detalle = estado.n === 0 ? 'sin evaluaciones'
+      : estado.n === 1 ? estado.promedio + '% (1 evaluación)'
+      : estado.promedio + '% (' + estado.n + ' evaluaciones)';
+    return '<span class="semaforo-dot semaforo-' + estado.key + '" aria-hidden="true"></span><span>' + escapeHTML(estado.label) + ' — ' + escapeHTML(detalle) + '</span>';
   }
 
-  function semaforoRowInnerHTML(respuestas, corteKey){
-    var estado = corteKey ? semaforoInfoCorte(corteKey, respuestas) : semaforoInfo(respuestas);
-    return '<span class="semaforo-dot semaforo-' + estado.key + '" aria-hidden="true"></span><span>' + escapeHTML(estado.label) + '</span>';
-  }
-
-  // Los cortes son fases con fecha de inicio configurable (ver Admin). Antes
-  // de que empiece su fase, "no evaluado" no debe leerse como incumplimiento
-  // — simplemente todavía no toca. Solo se aplica cuando NO hay ninguna
-  // respuesta; si ya hay algo evaluado (aunque sea temprano), se muestra su
-  // color real.
+  // Los cortes son checkpoints con fecha de inicio configurable (ver Admin).
+  // Antes de que empiece su fase el formulario de corte no se habilita — ya
+  // no colorean nada, solo gatean cuándo el Subsecretario puede evaluarlos.
   function corteFaseActiva(corteKey){
     var cfg = state.configCortes && state.configCortes[corteKey];
     if(!cfg || !cfg.inicio) return true;
@@ -871,14 +1134,6 @@
     hoy.setHours(0, 0, 0, 0);
     var inicio = new Date(cfg.inicio + 'T00:00:00');
     return hoy >= inicio;
-  }
-
-  function semaforoInfoCorte(corteKey, respuestas){
-    var claves = Object.keys(respuestas || {});
-    if(claves.length === 0 && !corteFaseActiva(corteKey)){
-      return { key:'gris', label:'Fase aún no iniciada' };
-    }
-    return semaforoInfo(respuestas);
   }
 
   /* ---------- Tema ---------- */
@@ -1117,6 +1372,29 @@
   }
 
   function mesaHTML(com){
+    // El EyC edita (rename = corrección de tipeo, ver save-mesa). Cualquier
+    // otro rol (Subse/SG navegando) la ve de solo lectura, con el semáforo
+    // vigente de cada persona y, para el Subsecretario, el botón para
+    // sustituirla — la única vía real de reemplazo.
+    if(!isEyc()){
+      var rowsRO = ROLES.map(function(r){
+        var m = miembroActivo(com.id, r.key);
+        var nombre = m && m.nombre ? m.nombre.trim() : '';
+        var nombreHTML = nombre
+          ? '<button type="button" class="hist-link miembro-row-ro-nombre" data-hist-miembro="' + m.id + '">' + escapeHTML(nombre) + '</button>'
+          : '<span class="hint-text">Vacante</span>';
+        var semaforoHTML = nombre
+          ? '<div class="semaforo-row" style="border:none;padding:0;margin:.2rem 0 0;">' + semaforoRowInnerHTML(m.id) + '</div>' : '';
+        var accion = isSubse()
+          ? '<button type="button" class="btn btn-secondary btn-sm" data-action="sustituir-miembro" data-com="' + com.id + '" data-rol="' + r.key + '">' + (nombre ? 'Sustituir' : 'Asignar') + '</button>'
+          : '';
+        return '<div class="miembro-row-ro">' +
+          '<div class="miembro-row-ro-main"><span class="role-label">' + escapeHTML(r.label) + '</span>' + nombreHTML + semaforoHTML + '</div>' +
+          accion +
+          '</div>';
+      }).join('');
+      return '<div class="comision-roles comision-roles-ro">' + rowsRO + '</div>';
+    }
     var fields = ROLES.map(function(r){
       return '<label class="role-field">' +
         '<span class="role-label">' + escapeHTML(r.label) + '</span>' +
@@ -1126,7 +1404,7 @@
     return '<div class="comision-roles">' + fields + '</div>' +
       '<div class="form-save-bar">' +
         '<button type="button" class="btn btn-primary row-save-btn" data-action="save-mesa">Guardar mesa directiva</button>' +
-        '<span class="form-save-hint">Los cambios no se guardan hasta que toques "Guardar".</span>' +
+        '<span class="form-save-hint">Renombrar corrige un error de tipeo. Si la persona cambió, pide a Subsecretaría que la sustituya desde Monitoreo — así su historial no se mezcla con el de la nueva.</span>' +
       '</div>';
   }
 
@@ -1139,66 +1417,90 @@
     return addBar + '<div class="taller-list">' + misTalleres.map(function(t){ return tallerRowHTML(t, com); }).join('') + '</div>';
   }
 
+  // taller.oradores guarda IDs de miembro (no role keys): así una actividad
+  // pasada sigue mostrando a quien realmente habló, aunque después se
+  // sustituya a esa persona en su cargo.
   function oradoresKeys(taller){
     return Array.isArray(taller.oradores) ? taller.oradores : [];
   }
 
   function oradoresLabel(com, taller){
-    var nombres = oradoresKeys(taller).map(function(k){ return (com.roles[k] || '').trim(); }).filter(Boolean);
+    var nombres = oradoresKeys(taller).map(function(id){ return nombreDeMiembro(id); }).filter(Boolean);
     return nombres.join(', ');
   }
 
   // Widget de oradores: chips de los ya elegidos (con quitar) + un select
-  // para agregar uno más de los que falten. La selección "en curso" vive en
-  // data-selected del contenedor hasta que se pulsa "Guardar actividad".
-  function oradoresWidgetHTML(com, selectedKeys){
-    var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
-    var chips = selectedKeys.map(function(k){
-      var r = ROLES.find(function(x){ return x.key === k; });
-      var nombre = (com.roles[k] || '').trim();
-      if(!nombre) return '';
-      return '<span class="orador-chip">' + escapeHTML(nombre) +
-        ' <span class="historico-meta">— ' + escapeHTML(r ? r.label : k) + '</span>' +
-        '<button type="button" class="orador-chip-remove" data-remove-orador="' + k + '" aria-label="Quitar ' + escapeHTML(nombre) + '">×</button></span>';
+  // para agregar uno más de los que falten (solo miembros activos). La
+  // selección "en curso" vive en data-selected del contenedor hasta que se
+  // pulsa "Guardar actividad".
+  function oradoresWidgetHTML(com, selectedIds){
+    var asignados = ROLES.map(function(r){ return miembroActivo(com.id, r.key); }).filter(function(m){ return m && m.nombre.trim(); });
+    var chips = selectedIds.map(function(id){
+      var m = miembroPorId(id);
+      if(!m) return '';
+      var r = ROLES.find(function(x){ return x.key === m.rolKey; });
+      return '<span class="orador-chip">' + escapeHTML(m.nombre) +
+        ' <span class="historico-meta">— ' + escapeHTML(r ? r.label : m.rolKey) + '</span>' +
+        '<button type="button" class="orador-chip-remove" data-remove-orador="' + id + '" aria-label="Quitar ' + escapeHTML(m.nombre) + '">×</button></span>';
     }).join('') || '<span class="hint-text">Ninguno seleccionado.</span>';
-    var restantes = asignados.filter(function(r){ return selectedKeys.indexOf(r.key) === -1; });
+    var restantes = asignados.filter(function(m){ return selectedIds.indexOf(m.id) === -1; });
     var addSelect = restantes.length === 0 ? '' :
       '<div class="select-wrap oradores-add-wrap"><select class="oradores-add-select" aria-label="Agregar orador">' +
         '<option value="">+ Agregar orador…</option>' +
-        restantes.map(function(r){ return '<option value="' + r.key + '">' + escapeHTML(r.label) + ' — ' + escapeHTML(com.roles[r.key]) + '</option>'; }).join('') +
+        restantes.map(function(m){ var r = ROLES.find(function(x){ return x.key === m.rolKey; }); return '<option value="' + m.id + '">' + escapeHTML(r ? r.label : m.rolKey) + ' — ' + escapeHTML(m.nombre) + '</option>'; }).join('') +
       '</select></div>';
     return '<div class="oradores-chips">' + chips + '</div>' + addSelect;
   }
 
+  // Miembros activos de la mesa que todavía no tienen evaluación guardada
+  // para este taller — bloquea "Cerrar actividad" mientras la lista no esté
+  // vacía, y ofrece saltar directo a evaluar a cada quien falte.
+  function miembrosPendientesEnTaller(com, taller){
+    var asignados = ROLES.map(function(r){ return miembroActivo(com.id, r.key); }).filter(function(m){ return m && m.nombre.trim(); });
+    return asignados.filter(function(m){
+      return !state.evaluaciones.some(function(ev){ return ev.tallerId === taller.id && ev.miembroId === m.id && typeof ev.puntajeTotal === 'number'; });
+    });
+  }
+
   function tallerRowHTML(t, com){
     var tipoActual = t.tipo || 'taller';
+    var cerrada = !!t.cerrada;
     var tipoOptions = TIPOS_ACTIVIDAD.map(function(ti){
       return '<option value="' + ti.key + '"' + (ti.key === tipoActual ? ' selected' : '') + '>' + escapeHTML(ti.label) + '</option>';
     }).join('');
     var oradoresSeleccionados = oradoresKeys(t);
-    return '<div class="taller-row" data-id="' + t.id + '">' +
+    return '<div class="taller-row' + (cerrada ? ' is-cerrada' : '') + '" data-id="' + t.id + '">' +
+      (cerrada ? '<span class="continuidad-badge" style="background:var(--surface-2);color:var(--text-secondary);align-self:flex-start;">Cerrada</span>' : '') +
       '<div class="taller-row-fields">' +
-        '<div class="select-wrap taller-tipo-wrap"><select data-field="tipo" aria-label="Tipo de actividad">' + tipoOptions + '</select></div>' +
-        '<input type="text" class="field-input" data-field="nombre" value="' + escapeHTML(t.nombre) + '" placeholder="Nombre o descripción de la actividad" aria-label="Nombre de la actividad">' +
-        '<input type="date" data-field="fecha" value="' + escapeHTML(t.fecha || '') + '" aria-label="Fecha de la actividad">' +
-        '<button type="button" class="icon-btn" data-action="del-taller" title="Eliminar actividad" aria-label="Eliminar actividad">' +
-          '<svg viewBox="0 0 24 24" class="trash-ic" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-        '</button>' +
+        '<div class="select-wrap taller-tipo-wrap"><select data-field="tipo" aria-label="Tipo de actividad"' + (cerrada ? ' disabled' : '') + '>' + tipoOptions + '</select></div>' +
+        '<input type="text" class="field-input" data-field="nombre" value="' + escapeHTML(t.nombre) + '" placeholder="Nombre o descripción de la actividad" aria-label="Nombre de la actividad"' + (cerrada ? ' disabled' : '') + '>' +
+        '<input type="date" data-field="fecha" value="' + escapeHTML(t.fecha || '') + '" aria-label="Fecha de la actividad"' + (cerrada ? ' disabled' : '') + '>' +
+        (cerrada ? '' :
+          '<button type="button" class="icon-btn" data-action="del-taller" title="Eliminar actividad" aria-label="Eliminar actividad">' +
+            '<svg viewBox="0 0 24 24" class="trash-ic" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+          '</button>') +
       '</div>' +
       '<div class="taller-oradores-field" data-oradores-holder data-selected="' + escapeHTML(JSON.stringify(oradoresSeleccionados)) + '">' +
         '<span class="role-label">Orador(es)</span>' +
         oradoresWidgetHTML(com, oradoresSeleccionados) +
       '</div>' +
+      '<div class="taller-cierre-aviso" data-cierre-aviso></div>' +
       '<div class="form-save-bar">' +
-        '<button type="button" class="btn btn-primary row-save-btn" data-action="save-taller">Guardar actividad</button>' +
-        '<span class="form-save-hint">Los cambios no se guardan hasta que toques "Guardar".</span>' +
+        (cerrada ? '' : '<button type="button" class="btn btn-primary row-save-btn" data-action="save-taller">Guardar actividad</button>') +
+        '<span class="form-save-hint">' + (cerrada ? 'Actividad cerrada — reábrela para editarla o registrar más evaluaciones.' : 'Los cambios no se guardan hasta que toques "Guardar".') + '</span>' +
+        '<button type="button" class="btn btn-secondary btn-sm" data-action="toggle-cerrar-taller">' + (cerrada ? 'Reabrir actividad' : 'Cerrar actividad') + '</button>' +
       '</div>' +
       '</div>';
   }
 
+  // sí/no de un criterio + comentario. El comentario es obligatorio cuando
+  // la respuesta es la DESFAVORABLE de ese criterio (ver RUBRICA.favorable
+  // — B1 está redactado en negativo, así que ahí "sí" es lo desfavorable).
   function critRowHTML(item, respuestas, comentarios){
     var val = respuestas[item.id];
     var comentario = (comentarios && comentarios[item.id]) || '';
+    var requerido = !!val && !esFavorable(item, val);
+    var faltaComentario = requerido && !comentario.trim();
     return '<div class="crit-row">' +
       '<div class="crit-main">' +
         '<p class="crit-text">' + escapeHTML(item.texto) + '</p>' +
@@ -1211,40 +1513,125 @@
           '</button>' +
         '</div>' +
       '</div>' +
-      '<input type="text" class="field-input crit-comment" data-comment="' + item.id + '" value="' + escapeHTML(comentario) + '" placeholder="Comentario (opcional)" aria-label="Comentario sobre este criterio">' +
+      '<input type="text" class="field-input crit-comment' + (faltaComentario ? ' is-required' : '') + '" data-comment="' + item.id + '" value="' + escapeHTML(comentario) + '" placeholder="' + (requerido ? 'Comentario obligatorio — explica por qué' : 'Comentario (opcional)') + '" aria-label="Comentario sobre este criterio">' +
+      (faltaComentario ? '<p class="crit-required-hint">Esta respuesta requiere un comentario.</p>' : '') +
       '</div>';
   }
 
-  function dimensionesHTML(respuestas, comentarios){
-    return RUBRICA.map(function(dim){
-      return '<section class="dimension-block">' +
-        '<h2 class="dimension-title"><span class="dimension-letter text-gradient">' + dim.dim + '</span>' + escapeHTML(dim.titulo) + '</h2>' +
-        dim.items.map(function(item){ return critRowHTML(item, respuestas, comentarios); }).join('') +
-        '</section>';
-    }).join('');
+  // Qué falta en una dimensión para considerarla completa: todos sus
+  // criterios respondidos, comentario donde la respuesta lo exige, y (para
+  // B/D/E/F) puntos manuales asignados — 0 cuenta como asignado, lo que
+  // falta es la ausencia de valor (puntosDim[dim] === null).
+  function dimensionEstado(dim, respuestas, comentarios, puntosDim){
+    var itemsFaltantes = dim.items.filter(function(i){ return !respuestas[i.id]; });
+    var comentariosFaltantes = dim.items.filter(function(i){
+      var val = respuestas[i.id];
+      return val && !esFavorable(i, val) && !((comentarios[i.id] || '').trim());
+    });
+    var faltaPuntos = dim.dim !== 'A' && (puntosDim[dim.dim] === null || puntosDim[dim.dim] === undefined || puntosDim[dim.dim] === '');
+    return {
+      completa: itemsFaltantes.length === 0 && comentariosFaltantes.length === 0 && !faltaPuntos,
+      itemsFaltantes: itemsFaltantes, comentariosFaltantes: comentariosFaltantes, faltaPuntos: faltaPuntos
+    };
+  }
+
+  function dimensionAccordionHTML(dim, respuestas, comentarios, puntosDim, defaultOpen){
+    var estado = dimensionEstado(dim, respuestas, comentarios, puntosDim);
+    var chip = '<span class="dim-accordion-chip ' + (estado.completa ? 'is-ok">Completa' : 'is-pending">Falta') + '</span>';
+    var puntosHTML = '';
+    if(dim.dim !== 'A'){
+      var v = puntosDim[dim.dim];
+      var vNum = (v === null || v === undefined || v === '') ? null : Number(v);
+      puntosHTML = '<div class="dim-puntos">' +
+        '<div class="dim-puntos-head"><span>Puntos asignados</span><span class="dim-puntos-valor">' + (vNum === null ? '— / ' + MAX_PTS_DIM : vNum + ' / ' + MAX_PTS_DIM) + '</span></div>' +
+        '<input type="range" min="0" max="' + MAX_PTS_DIM + '" step="0.25" value="' + (vNum === null ? 0 : vNum) + '" data-puntos-dim="' + dim.dim + '" aria-label="Puntos de ' + escapeHTML(dim.titulo) + '">' +
+        '</div>';
+    }
+    return '<details class="dim-accordion"' + (defaultOpen ? ' open' : '') + ' data-dim="' + dim.dim + '">' +
+      '<summary><span class="dim-accordion-title"><span class="dimension-letter text-gradient">' + dim.dim + '</span>' + escapeHTML(dim.titulo) + '</span>' + chip + '</summary>' +
+      '<div class="dim-accordion-body">' + puntosHTML + dim.items.map(function(item){ return critRowHTML(item, respuestas, comentarios); }).join('') + '</div>' +
+      '</details>';
+  }
+
+  // Acordeón: una dimensión abierta a la vez (la primera incompleta) en vez
+  // de las 5 desplegadas de golpe — menos scroll, y la cabecera de cada una
+  // ya dice si está completa sin tener que abrirla.
+  function dimensionesAccordionHTML(respuestas, comentarios, puntosDim, dimAbierta){
+    return RUBRICA.map(function(dim){ return dimensionAccordionHTML(dim, respuestas, comentarios, puntosDim, dim.dim === dimAbierta); }).join('');
+  }
+
+  // Refresca chips, botones activos, aviso de comentario obligatorio y el
+  // valor de los sliders SIN reconstruir los <input> — reconstruirlos
+  // perdería el foco del comentario a medio escribir y cortaría un slider a
+  // medio arrastrar.
+  function refreshRubricaUI(container){
+    RUBRICA.forEach(function(dim){
+      var det = container.querySelector('.dim-accordion[data-dim="' + dim.dim + '"]');
+      if(!det) return;
+      var estado = dimensionEstado(dim, currentRespuestas, currentComentarios, currentPuntosDim);
+      var chip = det.querySelector('.dim-accordion-chip');
+      if(chip){
+        chip.textContent = estado.completa ? 'Completa' : 'Falta';
+        chip.className = 'dim-accordion-chip ' + (estado.completa ? 'is-ok' : 'is-pending');
+      }
+      var valorEl = det.querySelector('.dim-puntos-valor');
+      if(valorEl){
+        var v = currentPuntosDim[dim.dim];
+        valorEl.textContent = (v === null || v === undefined || v === '') ? '— / ' + MAX_PTS_DIM : v + ' / ' + MAX_PTS_DIM;
+      }
+      dim.items.forEach(function(item){
+        var val = currentRespuestas[item.id];
+        var siBtn = det.querySelector('.seg-si[data-crit="' + item.id + '"]');
+        var noBtn = det.querySelector('.seg-no[data-crit="' + item.id + '"]');
+        if(siBtn){ siBtn.classList.toggle('is-active', val === 'si'); siBtn.setAttribute('aria-pressed', val === 'si'); }
+        if(noBtn){ noBtn.classList.toggle('is-active', val === 'no'); noBtn.setAttribute('aria-pressed', val === 'no'); }
+        var commentInput = det.querySelector('.crit-comment[data-comment="' + item.id + '"]');
+        if(commentInput){
+          var requerido = !!val && !esFavorable(item, val);
+          var faltaComentario = requerido && !(currentComentarios[item.id] || '').trim();
+          commentInput.classList.toggle('is-required', faltaComentario);
+          commentInput.placeholder = requerido ? 'Comentario obligatorio — explica por qué' : 'Comentario (opcional)';
+          var hint = commentInput.nextElementSibling;
+          var hasHint = hint && hint.classList.contains('crit-required-hint');
+          if(faltaComentario && !hasHint) commentInput.insertAdjacentHTML('afterend', '<p class="crit-required-hint">Esta respuesta requiere un comentario.</p>');
+          else if(!faltaComentario && hasHint) hint.remove();
+        }
+      });
+    });
+    var progressEl = container.querySelector('.rubrica-progress');
+    if(progressEl) progressEl.textContent = Object.keys(currentRespuestas).length + '/' + TOTAL_CRIT + ' respondidos';
   }
 
   function bindCritToggles(container, formId){
+    function afterChange(){
+      if(formId) markDirty(formId);
+      var bar = container.querySelector('.sticky-save-bar');
+      if(bar) bar.classList.add('is-dirty');
+      refreshRubricaUI(container);
+    }
     var btns = container.querySelectorAll('.seg');
     for(var i=0;i<btns.length;i++){
       btns[i].addEventListener('click', function(e){
         var btn = e.currentTarget;
         var critId = btn.dataset.crit;
         var val = btn.dataset.val;
-        if(currentRespuestas[critId] === val){
-          delete currentRespuestas[critId];
-        }else{
-          currentRespuestas[critId] = val;
-        }
-        if(formId) markDirty(formId);
-        renderRubricaAnswersOnly();
+        if(currentRespuestas[critId] === val){ delete currentRespuestas[critId]; }
+        else{ currentRespuestas[critId] = val; }
+        afterChange();
       });
     }
     var comentarioInputs = container.querySelectorAll('.crit-comment');
     for(var j=0;j<comentarioInputs.length;j++){
       comentarioInputs[j].addEventListener('input', function(e){
         currentComentarios[e.target.dataset.comment] = e.target.value;
-        if(formId) markDirty(formId);
+        afterChange();
+      });
+    }
+    var puntosInputs = container.querySelectorAll('[data-puntos-dim]');
+    for(var k=0;k<puntosInputs.length;k++){
+      puntosInputs[k].addEventListener('input', function(e){
+        currentPuntosDim[e.target.dataset.puntosDim] = Number(e.target.value);
+        afterChange();
       });
     }
   }
@@ -1255,21 +1642,21 @@
       container.innerHTML = emptyStateSubtab('Primero agrega una actividad', 'Necesitas al menos una actividad de esta comisión para poder evaluar.', 'talleres', 'Ir a Actividades');
       return;
     }
-    var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
+    var asignados = ROLES.map(function(r){ return miembroActivo(com.id, r.key); }).filter(function(m){ return m && m.nombre.trim(); });
     if(asignados.length === 0){
       container.innerHTML = emptyStateSubtab('Primero asigna la mesa directiva', 'Necesitas al menos un miembro con nombre asignado para poder evaluar.', 'mesa', 'Ir a Mesa directiva');
       return;
     }
     if(!selTaller || !misTalleres.find(function(t){ return t.id === selTaller; })) selTaller = misTalleres[0].id;
-    if(!selRol || !asignados.find(function(r){ return r.key === selRol; })) selRol = asignados[0].key;
+    if(!selMiembroId || !asignados.find(function(m){ return m.id === selMiembroId; })) selMiembroId = asignados[0].id;
 
     container.innerHTML =
       '<div class="evaluar-selectors">' +
         '<label class="select-field">Actividad<div class="select-wrap"><select id="sel-taller">' +
-          misTalleres.map(function(t){ return '<option value="' + t.id + '"' + (t.id === selTaller ? ' selected' : '') + '>' + escapeHTML(tipoLabel(t.tipo)) + ' — ' + escapeHTML(t.nombre) + '</option>'; }).join('') +
+          misTalleres.map(function(t){ return '<option value="' + t.id + '"' + (t.id === selTaller ? ' selected' : '') + '>' + escapeHTML(tipoLabel(t.tipo)) + ' — ' + escapeHTML(t.nombre) + (t.cerrada ? ' (cerrada)' : '') + '</option>'; }).join('') +
         '</select></div></label>' +
-        '<label class="select-field">Miembro de la mesa<div class="select-wrap"><select id="sel-rol">' +
-          asignados.map(function(r){ return '<option value="' + r.key + '"' + (r.key === selRol ? ' selected' : '') + '>' + escapeHTML(r.label) + ' — ' + escapeHTML(com.roles[r.key]) + '</option>'; }).join('') +
+        '<label class="select-field">Miembro de la mesa<div class="select-wrap"><select id="sel-miembro">' +
+          asignados.map(function(m){ var r = ROLES.find(function(x){ return x.key === m.rolKey; }); return '<option value="' + m.id + '"' + (m.id === selMiembroId ? ' selected' : '') + '>' + escapeHTML(r ? r.label : m.rolKey) + ' — ' + escapeHTML(m.nombre) + '</option>'; }).join('') +
         '</select></div></label>' +
       '</div>' +
       '<div id="rubrica-container"></div>';
@@ -1281,10 +1668,10 @@
         renderRubrica(com);
       }, function(){ target.value = prev; });
     });
-    document.getElementById('sel-rol').addEventListener('change', function(e){
-      var prev = selRol, target = e.target;
+    document.getElementById('sel-miembro').addEventListener('change', function(e){
+      var prev = selMiembroId, target = e.target;
       confirmDiscardIfDirty(function(){
-        selRol = target.value;
+        selMiembroId = target.value;
         renderRubrica(com);
       }, function(){ target.value = prev; });
     });
@@ -1296,232 +1683,300 @@
     var container = document.getElementById('rubrica-container');
     if(!container) return;
     var taller = state.talleres.find(function(t){ return t.id === selTaller && t.comisionId === com.id; });
-    if(!taller || !selRol || !(com.roles[selRol] || '').trim()){
+    var miembro = miembroPorId(selMiembroId);
+    if(!taller || !miembro || !miembro.nombre.trim()){
       container.innerHTML = '<p class="hint-text">Selecciona una actividad y un miembro con nombre asignado para comenzar.</p>';
       return;
     }
-    var existing = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === selTaller && e.rol === selRol; });
+    var existing = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === selTaller && e.miembroId === selMiembroId; });
     currentRespuestas = existing ? Object.assign({}, existing.respuestas) : {};
     currentComentarios = existing ? Object.assign({}, existing.comentarios || {}) : {};
+    currentPuntosDim = Object.assign({ B:null, D:null, E:null, F:null }, existing ? existing.puntosDim : {});
     var respondidos = Object.keys(currentRespuestas).length;
-    var rolLabel = ROLES.find(function(r){ return r.key === selRol; }).label;
+    var rolInfo = ROLES.find(function(r){ return r.key === miembro.rolKey; });
+    var dimIncompleta = RUBRICA.find(function(d){ return !dimensionEstado(d, currentRespuestas, currentComentarios, currentPuntosDim).completa; });
+    var dimAbierta = (dimIncompleta || RUBRICA[0]).dim;
 
     container.innerHTML =
       '<div class="rubrica-head">' +
         '<div>' +
           '<p class="rubrica-breadcrumb">' + escapeHTML(tipoLabel(taller.tipo)) + ' — ' + escapeHTML(taller.nombre) + (oradoresLabel(com, taller) ? ' · Orador(es): ' + escapeHTML(oradoresLabel(com, taller)) : '') + '</p>' +
-          '<h2 class="rubrica-title">' + escapeHTML(com.roles[selRol]) + ' <span class="rubrica-rol">— ' + escapeHTML(rolLabel) + '</span></h2>' +
+          '<h2 class="rubrica-title">' + escapeHTML(miembro.nombre) + ' <span class="rubrica-rol">— ' + escapeHTML(rolInfo ? rolInfo.label : miembro.rolKey) + '</span></h2>' +
         '</div>' +
         '<span class="rubrica-progress">' + respondidos + '/' + TOTAL_CRIT + ' respondidos</span>' +
       '</div>' +
-      dimensionesHTML(currentRespuestas, currentComentarios) +
-      '<div class="rubrica-footer">' +
-        '<span class="hint-text">' + (existing ? 'Última actualización: ' + formatFecha(existing.actualizado) : 'Aún no se ha guardado esta evaluación.') + '</span>' +
-        '<button type="button" class="btn btn-primary" id="btn-guardar-evaluacion">Guardar evaluación</button>' +
+      dimensionesAccordionHTML(currentRespuestas, currentComentarios, currentPuntosDim, dimAbierta) +
+      '<p class="hint-text" style="margin-top:.9rem;">' + (existing ? 'Última actualización: ' + formatFecha(existing.actualizado) + ' · Puntaje guardado: ' + existing.puntajeTotal + '/100' : 'Aún no se ha guardado esta evaluación.') + '</p>' +
+      '<div class="sticky-save-bar" id="evaluar-save-bar">' +
+        '<button type="button" class="btn btn-primary" id="btn-guardar-evaluacion" style="width:100%;">Guardar evaluación</button>' +
       '</div>';
 
     container.querySelector('#btn-guardar-evaluacion').addEventListener('click', function(){ handleGuardarEvaluacion(com); });
     bindCritToggles(container, 'evaluar');
   }
 
-  function renderRubricaAnswersOnly(){
-    var container = document.getElementById('rubrica-container');
-    if(!container) return;
-    var respondidos = Object.keys(currentRespuestas).length;
-    var progressEl = container.querySelector('.rubrica-progress');
-    if(progressEl) progressEl.textContent = respondidos + '/' + TOTAL_CRIT + ' respondidos';
-    var semaforoRow = container.querySelector('.semaforo-row');
-    if(semaforoRow) semaforoRow.innerHTML = semaforoRowInnerHTML(currentRespuestas, selCorteTipo);
-    var btns = container.querySelectorAll('.seg');
-    for(var i=0;i<btns.length;i++){
-      var btn = btns[i];
-      var isActive = currentRespuestas[btn.dataset.crit] === btn.dataset.val;
-      btn.classList.toggle('is-active', isActive);
-      btn.setAttribute('aria-pressed', isActive);
-    }
-  }
-
   function handleGuardarEvaluacion(com){
-    if(!selTaller || !selRol) return;
-    var nombreMiembro = com.roles[selRol] || '';
-    var existing = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === selTaller && e.rol === selRol; });
+    var miembro = miembroPorId(selMiembroId);
+    if(!selTaller || !miembro) return;
+    var dimFaltante = RUBRICA.find(function(d){ return !dimensionEstado(d, currentRespuestas, currentComentarios, currentPuntosDim).completa; });
+    if(dimFaltante){
+      var container = document.getElementById('rubrica-container');
+      var det = container && container.querySelector('.dim-accordion[data-dim="' + dimFaltante.dim + '"]');
+      if(det){ det.open = true; det.scrollIntoView({ block:'center', behavior:'smooth' }); }
+      toast('Faltan datos en "' + dimFaltante.titulo + '" antes de poder guardar.', 'error');
+      return;
+    }
+    var puntajeA = calcPuntajeA(currentRespuestas);
+    var puntajeTotal = computePuntaje(currentRespuestas, currentPuntosDim);
+    var existing = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === selTaller && e.miembroId === selMiembroId; });
     if(existing){
       existing.respuestas = Object.assign({}, currentRespuestas);
       existing.comentarios = Object.assign({}, currentComentarios);
-      existing.nombreMiembro = nombreMiembro;
+      existing.puntosDim = Object.assign({}, currentPuntosDim);
+      existing.puntajeA = puntajeA;
+      existing.puntajeTotal = puntajeTotal;
+      existing.rol = miembro.rolKey;
+      existing.nombreMiembro = miembro.nombre;
       existing.actualizado = new Date().toISOString();
     }else{
       state.evaluaciones.push({
-        id: uid('ev'),
-        comisionId: com.id,
-        tallerId: selTaller,
-        rol: selRol,
-        nombreMiembro: nombreMiembro,
+        id: uid('ev'), comisionId: com.id, tallerId: selTaller, miembroId: selMiembroId,
+        rol: miembro.rolKey, nombreMiembro: miembro.nombre,
         respuestas: Object.assign({}, currentRespuestas),
         comentarios: Object.assign({}, currentComentarios),
+        puntosDim: Object.assign({}, currentPuntosDim),
+        puntajeA: puntajeA, puntajeTotal: puntajeTotal,
         actualizado: new Date().toISOString()
       });
     }
     saveState();
     clearDirty('evaluar');
     updateHeaderCounter();
-    toast('Evaluación guardada');
+    toast('Evaluación guardada — ' + puntajeTotal + '/100');
     renderRubrica(com);
   }
 
+  /* ---------- Cortes ----------
+     Un corte ya NO es otra rúbrica: es un checkpoint del Subsecretario, que
+     ve el histórico y el semáforo vigente del voluntario y escribe un
+     comentario sobre su proceso. El comentario es obligatorio si el
+     semáforo está en amarillo o rojo (ahí el caso pasa a revisión del SG);
+     opcional si está en verde. */
   function mountCortesSubtab(com, container){
-    var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
+    var asignados = ROLES.map(function(r){ return miembroActivo(com.id, r.key); }).filter(function(m){ return m && m.nombre.trim(); });
     if(asignados.length === 0){
-      container.innerHTML = emptyStateSubtab('Primero asigna la mesa directiva', 'Necesitas al menos un miembro con nombre asignado para poder evaluar los cortes.', 'mesa', 'Ir a Mesa directiva');
+      container.innerHTML = emptyStateSubtab('Primero asigna la mesa directiva', 'Necesitas al menos un miembro con nombre asignado para poder registrar cortes.', 'mesa', 'Ir a Mesa directiva');
       return;
     }
     if(!selCorteTipo || !CORTES.find(function(c){ return c.key === selCorteTipo; })) selCorteTipo = CORTES[0].key;
-    if(!selRol || !asignados.find(function(r){ return r.key === selRol; })) selRol = asignados[0].key;
+    if(!selMiembroId || !asignados.find(function(m){ return m.id === selMiembroId; })) selMiembroId = asignados[0].id;
 
     container.innerHTML =
       '<div class="evaluar-selectors">' +
         '<label class="select-field">Corte<div class="select-wrap"><select id="sel-corte">' +
-          CORTES.map(function(c){ return '<option value="' + c.key + '"' + (c.key === selCorteTipo ? ' selected' : '') + '>' + escapeHTML(c.label) + ' — ' + escapeHTML(c.desc) + ' (' + c.peso + '%)</option>'; }).join('') +
+          CORTES.map(function(c){ return '<option value="' + c.key + '"' + (c.key === selCorteTipo ? ' selected' : '') + '>' + escapeHTML(c.label) + ' — ' + escapeHTML(c.desc) + '</option>'; }).join('') +
         '</select></div></label>' +
-        '<label class="select-field">Miembro de la mesa<div class="select-wrap"><select id="sel-rol-corte">' +
-          asignados.map(function(r){ return '<option value="' + r.key + '"' + (r.key === selRol ? ' selected' : '') + '>' + escapeHTML(r.label) + ' — ' + escapeHTML(com.roles[r.key]) + '</option>'; }).join('') +
+        '<label class="select-field">Miembro de la mesa<div class="select-wrap"><select id="sel-miembro-corte">' +
+          asignados.map(function(m){ var r = ROLES.find(function(x){ return x.key === m.rolKey; }); return '<option value="' + m.id + '"' + (m.id === selMiembroId ? ' selected' : '') + '>' + escapeHTML(r ? r.label : m.rolKey) + ' — ' + escapeHTML(m.nombre) + '</option>'; }).join('') +
         '</select></div></label>' +
       '</div>' +
-      '<div id="rubrica-container"></div>';
+      '<div id="corte-checkpoint-container"></div>';
 
     document.getElementById('sel-corte').addEventListener('change', function(e){
       var prev = selCorteTipo, target = e.target;
-      confirmDiscardIfDirty(function(){
-        selCorteTipo = target.value;
-        renderRubricaCorte(com);
-      }, function(){ target.value = prev; });
+      confirmDiscardIfDirty(function(){ selCorteTipo = target.value; renderCorteCheckpoint(com); }, function(){ target.value = prev; });
     });
-    document.getElementById('sel-rol-corte').addEventListener('change', function(e){
-      var prev = selRol, target = e.target;
-      confirmDiscardIfDirty(function(){
-        selRol = target.value;
-        renderRubricaCorte(com);
-      }, function(){ target.value = prev; });
+    document.getElementById('sel-miembro-corte').addEventListener('change', function(e){
+      var prev = selMiembroId, target = e.target;
+      confirmDiscardIfDirty(function(){ selMiembroId = target.value; renderCorteCheckpoint(com); }, function(){ target.value = prev; });
     });
 
-    renderRubricaCorte(com);
+    renderCorteCheckpoint(com);
   }
 
-  function renderRubricaCorte(com){
-    var container = document.getElementById('rubrica-container');
+  var currentCorteComentario = '';
+
+  function renderCorteCheckpoint(com){
+    var container = document.getElementById('corte-checkpoint-container');
     if(!container) return;
-    if(!selRol || !(com.roles[selRol] || '').trim()){
-      container.innerHTML = '<p class="hint-text">Selecciona un miembro con nombre asignado para comenzar.</p>';
+    var miembro = miembroPorId(selMiembroId);
+    var corteInfo = CORTES.find(function(c){ return c.key === selCorteTipo; });
+    if(!miembro || !corteInfo){
+      container.innerHTML = '<p class="hint-text">Selecciona un corte y un miembro con nombre asignado para comenzar.</p>';
       return;
     }
-    var corteInfo = CORTES.find(function(c){ return c.key === selCorteTipo; });
-    var existing = state.cortes.find(function(c){ return c.comisionId === com.id && c.rol === selRol && c.corteTipo === selCorteTipo; });
-    currentRespuestas = existing ? Object.assign({}, existing.respuestas) : {};
-    currentComentarios = existing ? Object.assign({}, existing.comentarios || {}) : {};
-    var respondidos = Object.keys(currentRespuestas).length;
-    var rolLabel = ROLES.find(function(r){ return r.key === selRol; }).label;
+    if(!corteFaseActiva(selCorteTipo)){
+      container.innerHTML = '<p class="hint-text">La fase de este corte todavía no comienza (se configura en Monitoreo → Fases de los cortes).</p>';
+      return;
+    }
+    var existing = state.cortes.find(function(c){ return c.miembroId === selMiembroId && c.corteKey === selCorteTipo; });
+    currentCorteComentario = existing ? existing.comentario : '';
+    var estado = semaforoDeMiembro(selMiembroId);
+    var requiereComentario = estado.key === 'amarillo' || estado.key === 'rojo';
+    var soloLectura = !!(existing && existing.decisionSga && existing.decisionSga.estado !== 'pendiente');
+    var rolInfo = ROLES.find(function(r){ return r.key === miembro.rolKey; });
+    var decisionHTML = (existing && existing.decisionSga && existing.decisionSga.estado !== 'pendiente')
+      ? '<p class="hint-text">Decisión del Secretario General: <span class="continuidad-badge continuidad-' + existing.decisionSga.estado + '">' + (existing.decisionSga.estado === 'continua' ? 'Continúa' : 'No continúa') + '</span>' + (existing.decisionSga.comentario ? ' — ' + escapeHTML(existing.decisionSga.comentario) : '') + '</p>'
+      : '';
 
     container.innerHTML =
       '<div class="rubrica-head">' +
         '<div>' +
-          '<p class="rubrica-breadcrumb">' + escapeHTML(corteInfo.label) + ' — ' + escapeHTML(corteInfo.desc) + ' (' + corteInfo.peso + '%)</p>' +
-          '<h2 class="rubrica-title">' + escapeHTML(com.roles[selRol]) + ' <span class="rubrica-rol">— ' + escapeHTML(rolLabel) + '</span></h2>' +
+          '<p class="rubrica-breadcrumb">' + escapeHTML(corteInfo.label) + ' — ' + escapeHTML(corteInfo.desc) + '</p>' +
+          '<h2 class="rubrica-title">' + escapeHTML(miembro.nombre) + ' <span class="rubrica-rol">— ' + escapeHTML(rolInfo ? rolInfo.label : miembro.rolKey) + '</span></h2>' +
         '</div>' +
-        '<span class="rubrica-progress">' + respondidos + '/' + TOTAL_CRIT + ' respondidos</span>' +
       '</div>' +
-      '<div class="semaforo-row">' + semaforoRowInnerHTML(currentRespuestas, selCorteTipo) + '</div>' +
-      dimensionesHTML(currentRespuestas, currentComentarios) +
-      '<div class="rubrica-footer">' +
-        '<span class="hint-text">' + (existing ? 'Última actualización: ' + formatFecha(existing.actualizado) : 'Aún no se ha guardado esta evaluación.') + '</span>' +
-        '<button type="button" class="btn btn-primary" id="btn-guardar-corte">Guardar evaluación</button>' +
-      '</div>' +
-      '<div class="rubrica-footer" style="border-top:none;padding-top:0;margin-top:.75rem;">' +
-        aprobacionSectionHTML(existing) +
-      '</div>';
+      '<div class="semaforo-row">' + semaforoRowInnerHTML(selMiembroId) + '</div>' +
+      historicoResumenHTML(selMiembroId, 3) +
+      '<label class="role-field" style="margin-top:1rem;">' +
+        '<span class="role-label">Comentario del corte' + (requiereComentario ? ' (obligatorio — semáforo: ' + estado.label + ')' : ' (opcional)') + '</span>' +
+        '<textarea class="field-input" id="corte-comentario" rows="4" placeholder="' + (requiereComentario ? 'Explica el seguimiento — este voluntario pasará a revisión del Secretario General.' : 'Comentario sobre el proceso de este voluntario (opcional).') + '"' + (soloLectura ? ' disabled' : '') + '>' + escapeHTML(currentCorteComentario) + '</textarea>' +
+      '</label>' +
+      (existing ? '<p class="hint-text">Último corte guardado: ' + formatFecha(existing.fecha) + '.</p>' : '') +
+      decisionHTML +
+      (soloLectura
+        ? '<p class="hint-text">El Secretario General ya decidió sobre este caso — el corte queda de solo lectura.</p>'
+        : '<div class="rubrica-footer"><span class="hint-text"></span><button type="button" class="btn btn-primary" id="btn-guardar-corte">Guardar corte</button></div>');
 
-    container.querySelector('#btn-guardar-corte').addEventListener('click', function(){ handleGuardarCorte(com); });
-    bindCritToggles(container, 'cortes');
-    if(canApprove() && existing){
-      var btnAprobar = container.querySelector('#btn-aprobar-corte');
-      var btnRechazar = container.querySelector('#btn-rechazar-corte');
-      if(btnAprobar) btnAprobar.addEventListener('click', function(){ handleAprobarCorte(com, 'aprobado'); });
-      if(btnRechazar) btnRechazar.addEventListener('click', function(){ handleAprobarCorte(com, 'rechazado'); });
+    if(!soloLectura){
+      var textarea = container.querySelector('#corte-comentario');
+      textarea.addEventListener('input', function(e){ currentCorteComentario = e.target.value; markDirty('cortes'); });
+      container.querySelector('#btn-guardar-corte').addEventListener('click', function(){ handleGuardarCorte(com); });
     }
-  }
-
-  // La jerarquía de aprobación: el Subsecretario evalúa el corte (queda
-  // "pendiente"), y solo el Secretario General puede aprobarlo o rechazarlo.
-  // Cualquier nuevo guardado vuelve a poner el corte en pendiente.
-  function aprobacionSectionHTML(existing){
-    if(!existing){
-      return '<span class="hint-text">Guarda la evaluación para enviarla a aprobación del Secretario General.</span>';
-    }
-    var ap = existing.aprobacion || { estado:'pendiente' };
-    var estado = ap.estado || 'pendiente';
-    var label = estado === 'aprobado' ? 'Aprobado por Secretaría General' : estado === 'rechazado' ? 'Rechazado por Secretaría General' : 'Pendiente de aprobación del SG';
-    var html = '<div><span class="aprobacion-badge aprobacion-' + estado + '">' + escapeHTML(label) + '</span>' +
-      (ap.comentario ? '<p class="hint-text" style="margin-top:.5rem;">Comentario del SG: ' + escapeHTML(ap.comentario) + '</p>' : '') +
-      '</div>';
-    if(canApprove()){
-      html += '<div class="aprobacion-actions">' +
-        '<button type="button" class="btn btn-approve" id="btn-aprobar-corte">Aprobar</button>' +
-        '<button type="button" class="btn btn-reject" id="btn-rechazar-corte">Rechazar</button>' +
-      '</div>';
-    }
-    return html;
-  }
-
-  function handleAprobarCorte(com, estado){
-    var existing = state.cortes.find(function(c){ return c.comisionId === com.id && c.rol === selRol && c.corteTipo === selCorteTipo; });
-    if(!existing) return;
-    var comentario = '';
-    if(estado === 'rechazado'){
-      comentario = prompt('Comentario para el Subsecretario (opcional):', '') || '';
-    }
-    existing.aprobacion = { estado: estado, comentario: comentario, fecha: new Date().toISOString() };
-    saveState();
-    toast(estado === 'aprobado' ? 'Corte aprobado' : 'Corte rechazado');
-    renderRubricaCorte(com);
   }
 
   function handleGuardarCorte(com){
-    if(!selRol || !selCorteTipo) return;
-    var nombreMiembro = com.roles[selRol] || '';
-    var existing = state.cortes.find(function(c){ return c.comisionId === com.id && c.rol === selRol && c.corteTipo === selCorteTipo; });
-    var aprobacionNueva = { estado:'pendiente', comentario:'', fecha:'' };
+    var miembro = miembroPorId(selMiembroId);
+    if(!miembro || !selCorteTipo) return;
+    var estado = semaforoDeMiembro(selMiembroId);
+    var requiereComentario = estado.key === 'amarillo' || estado.key === 'rojo';
+    if(requiereComentario && !currentCorteComentario.trim()){
+      toast('Semáforo: ' + estado.label + ' — el comentario es obligatorio.', 'error');
+      var textarea = document.getElementById('corte-comentario');
+      if(textarea) textarea.focus();
+      return;
+    }
+    var existing = state.cortes.find(function(c){ return c.miembroId === selMiembroId && c.corteKey === selCorteTipo; });
+    var ahora = new Date().toISOString();
     if(existing){
-      existing.respuestas = Object.assign({}, currentRespuestas);
-      existing.comentarios = Object.assign({}, currentComentarios);
-      existing.nombreMiembro = nombreMiembro;
-      existing.actualizado = new Date().toISOString();
-      existing.aprobacion = aprobacionNueva;
+      existing.comentario = currentCorteComentario.trim();
+      existing.semaforoAlMomento = estado.key;
+      existing.promedioAlMomento = estado.promedio;
+      existing.requiereRevision = requiereComentario;
+      existing.fecha = ahora;
+      existing.decisionSga = { estado:'pendiente', comentario:'', fecha:'' };
     }else{
       state.cortes.push({
-        id: uid('corte'),
-        comisionId: com.id,
-        rol: selRol,
-        corteTipo: selCorteTipo,
-        nombreMiembro: nombreMiembro,
-        respuestas: Object.assign({}, currentRespuestas),
-        comentarios: Object.assign({}, currentComentarios),
-        aprobacion: aprobacionNueva,
-        actualizado: new Date().toISOString()
+        id: uid('corte'), comisionId: com.id, miembroId: selMiembroId, rolKey: miembro.rolKey, corteKey: selCorteTipo,
+        comentario: currentCorteComentario.trim(),
+        semaforoAlMomento: estado.key, promedioAlMomento: estado.promedio,
+        requiereRevision: requiereComentario, fecha: ahora,
+        decisionSga: { estado:'pendiente', comentario:'', fecha:'' }
       });
     }
     saveState();
     clearDirty('cortes');
     updateHeaderCounter();
-    toast('Evaluación de corte guardada — pendiente de aprobación del SG');
-    renderRubricaCorte(com);
+    toast(requiereComentario ? 'Corte guardado — pasa a revisión del Secretario General' : 'Corte guardado');
+    renderCorteCheckpoint(com);
   }
 
+  /* ---------- Histórico de voluntario ----------
+     Fuente única para el checkpoint de corte, el modal completo y donde
+     haga falta: mezcla evaluaciones de taller y comentarios de corte de un
+     miembro, más reciente primero. */
+  function historicoDeMiembro(miembroId){
+    var evs = state.evaluaciones.filter(function(e){ return e.miembroId === miembroId; }).map(function(e){
+      var taller = state.talleres.find(function(t){ return t.id === e.tallerId; });
+      return {
+        tipo:'evaluacion', fecha: e.actualizado,
+        tallerNombre: taller ? (tipoLabel(taller.tipo) + ' — ' + taller.nombre) : 'Actividad eliminada',
+        puntajeTotal: e.puntajeTotal, puntajeA: e.puntajeA, puntosDim: e.puntosDim
+      };
+    });
+    var cortes = state.cortes.filter(function(c){ return c.miembroId === miembroId; }).map(function(c){
+      var corteInfo = CORTES.find(function(x){ return x.key === c.corteKey; });
+      return {
+        tipo:'corte', fecha: c.fecha,
+        corteLabel: corteInfo ? corteInfo.label : c.corteKey,
+        comentario: c.comentario, semaforoAlMomento: c.semaforoAlMomento, promedioAlMomento: c.promedioAlMomento,
+        decisionSga: c.decisionSga
+      };
+    });
+    return evs.concat(cortes).sort(function(a,b){ return new Date(b.fecha) - new Date(a.fecha); });
+  }
+
+  function historicoEntradaHTML(entrada){
+    if(entrada.tipo === 'evaluacion'){
+      var desglose = DIMS_MANUALES.map(function(d){
+        var v = entrada.puntosDim && entrada.puntosDim[d];
+        return d + ': ' + (v == null ? '—' : v) + '/' + MAX_PTS_DIM;
+      }).join(', ');
+      return '<div class="hist-entry">' +
+        '<div class="hist-entry-head"><strong>' + escapeHTML(entrada.tallerNombre) + '</strong><span class="historico-meta">' + formatFecha(entrada.fecha) + '</span></div>' +
+        '<p class="hint-text">Puntaje: ' + entrada.puntajeTotal + '/100 (A: ' + (Math.round(entrada.puntajeA * 100) / 100) + '/85, ' + desglose + ')</p>' +
+        '</div>';
+    }
+    var decision = entrada.decisionSga && entrada.decisionSga.estado !== 'pendiente'
+      ? '<span class="continuidad-badge continuidad-' + entrada.decisionSga.estado + '">' + (entrada.decisionSga.estado === 'continua' ? 'Continúa' : 'No continúa') + '</span>' : '';
+    return '<div class="hist-entry">' +
+      '<div class="hist-entry-head"><strong>' + escapeHTML(entrada.corteLabel) + ' — Subsecretaría</strong><span class="historico-meta">' + formatFecha(entrada.fecha) + '</span></div>' +
+      '<p class="hint-text"><span class="semaforo-dot semaforo-' + entrada.semaforoAlMomento + '"></span> Semáforo en ese momento: ' + semaforoLabel(entrada.semaforoAlMomento) + (entrada.promedioAlMomento != null ? ' (' + entrada.promedioAlMomento + '%)' : '') + '</p>' +
+      (entrada.comentario ? '<p class="hint-text">' + escapeHTML(entrada.comentario) + '</p>' : '') +
+      decision +
+      '</div>';
+  }
+
+  function historicoResumenHTML(miembroId, limite){
+    var entradas = historicoDeMiembro(miembroId).slice(0, limite);
+    if(entradas.length === 0) return '<p class="hint-text" style="margin:.75rem 0;">Sin historial todavía.</p>';
+    return '<div class="hist-list hist-list-compact">' + entradas.map(historicoEntradaHTML).join('') + '</div>' +
+      '<button type="button" class="hist-link" data-hist-miembro="' + miembroId + '" style="margin-top:.3rem;">Ver histórico completo →</button>';
+  }
+
+  var historicoModalMostrando = 5;
+  function abrirHistoricoModal(miembroId){
+    var m = miembroPorId(miembroId);
+    if(!m) return;
+    historicoModalMostrando = 5;
+    renderHistoricoModalContent(miembroId);
+    document.getElementById('historico-modal').classList.add('is-open');
+  }
+  function cerrarHistoricoModal(){
+    document.getElementById('historico-modal').classList.remove('is-open');
+  }
+  function renderHistoricoModalContent(miembroId){
+    var m = miembroPorId(miembroId);
+    var content = document.getElementById('historico-modal-content');
+    if(!m || !content) return;
+    var com = state.comisiones.find(function(c){ return c.id === m.comisionId; });
+    var r = ROLES.find(function(x){ return x.key === m.rolKey; });
+    var todas = historicoDeMiembro(miembroId);
+    var visibles = todas.slice(0, historicoModalMostrando);
+    var estadoActividad = m.activo ? '' : '<p class="hint-text">Ya no está activa/o en este cargo' + (m.hasta ? ' (desde ' + formatFecha(m.hasta) + ')' : '') + '. Su historial queda archivado.</p>';
+    content.innerHTML =
+      '<h3>' + escapeHTML(m.nombre) + '</h3>' +
+      '<p class="hint-text">' + escapeHTML(r ? r.label : m.rolKey) + (com ? ' — ' + escapeHTML(com.sigla) : '') + '</p>' +
+      '<div class="semaforo-row" style="margin-top:.6rem;">' + semaforoRowInnerHTML(miembroId) + '</div>' +
+      estadoActividad +
+      (todas.length === 0
+        ? '<p class="hint-text" style="margin-top:1rem;">Sin historial todavía.</p>'
+        : '<div class="hist-list" style="margin-top:1rem;">' + visibles.map(historicoEntradaHTML).join('') + '</div>' +
+          (todas.length > historicoModalMostrando ? '<button type="button" class="btn btn-secondary btn-sm" id="historico-modal-mas" style="margin-top:.6rem;">Ver más (' + (todas.length - historicoModalMostrando) + ')</button>' : ''));
+    var masBtn = document.getElementById('historico-modal-mas');
+    if(masBtn) masBtn.addEventListener('click', function(){ historicoModalMostrando += 5; renderHistoricoModalContent(miembroId); });
+  }
+
+  // Lista de evaluaciones de la comisión (para navegar de vuelta a Evaluar).
+  // Cada fila es una evaluación puntual, no el promedio de una persona, así
+  // que se filtra por su propio puntaje — el semáforo (que sí es por
+  // persona) se ve completo en el modal de histórico de cada quien.
   function historicoHTML(com){
     var hasRegs = state.evaluaciones.some(function(e){ return e.comisionId === com.id; });
     if(!hasRegs){
       return emptyState('Aún no hay historial', 'Cuando se guarde una evaluación de esta comisión, aparecerá aquí.');
     }
     var puntajeOptions = [['todos','Todos'],['alto','80–100'],['medio','50–79'],['bajo','0–49']];
-    var semaforoOptions = [['todos','Todos'],['verde','Verde'],['amarillo','Amarillo'],['rojo','Rojo']];
     return '<div class="admin-filters">' +
       '<label class="select-field admin-filter-search">Buscar' +
         '<input type="text" id="historico-buscador" class="admin-search-input" placeholder="Persona o actividad…" value="' + escapeHTML(historicoBusqueda) + '">' +
@@ -1529,15 +1984,12 @@
       '<label class="select-field admin-filter-select">Puntaje<div class="select-wrap"><select id="historico-filtro-puntaje">' +
         puntajeOptions.map(function(o){ return '<option value="' + o[0] + '"' + (historicoFiltroPuntaje === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
       '</select></div></label>' +
-      '<label class="select-field admin-filter-select">Semáforo<div class="select-wrap"><select id="historico-filtro-semaforo">' +
-        semaforoOptions.map(function(o){ return '<option value="' + o[0] + '"' + (historicoFiltroSemaforo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
-      '</select></div></label>' +
     '</div>' +
     '<div id="historico-rows">' + historicoRowsHTML(com) + '</div>';
   }
 
   function historicoRowsHTML(com){
-    var regs = state.evaluaciones.filter(function(e){ return e.comisionId === com.id; });
+    var regs = state.evaluaciones.filter(function(e){ return e.comisionId === com.id && typeof e.puntajeTotal === 'number'; });
     var q = historicoBusqueda.trim().toLowerCase();
     var filtered = regs.filter(function(ev){
       var taller = state.talleres.find(function(t){ return t.id === ev.tallerId; });
@@ -1546,13 +1998,9 @@
         var haystack = (ev.nombreMiembro + ' ' + (rolInfo ? rolInfo.label : '') + ' ' + (taller ? taller.nombre : '') + ' ' + (taller ? tipoLabel(taller.tipo) : '')).toLowerCase();
         if(haystack.indexOf(q) === -1) return false;
       }
-      var claves = Object.keys(ev.respuestas || {});
-      var siCount = claves.filter(function(k){ return ev.respuestas[k] === 'si'; }).length;
-      var pct = Math.round((siCount / TOTAL_CRIT) * 100);
-      if(historicoFiltroPuntaje === 'alto' && pct < 80) return false;
-      if(historicoFiltroPuntaje === 'medio' && (pct < 50 || pct >= 80)) return false;
-      if(historicoFiltroPuntaje === 'bajo' && pct >= 50) return false;
-      if(historicoFiltroSemaforo !== 'todos' && semaforoInfo(ev.respuestas).key !== historicoFiltroSemaforo) return false;
+      if(historicoFiltroPuntaje === 'alto' && ev.puntajeTotal < 80) return false;
+      if(historicoFiltroPuntaje === 'medio' && (ev.puntajeTotal < 50 || ev.puntajeTotal >= 80)) return false;
+      if(historicoFiltroPuntaje === 'bajo' && ev.puntajeTotal >= 50) return false;
       return true;
     }).sort(function(a, b){ return new Date(b.actualizado) - new Date(a.actualizado); });
     if(filtered.length === 0){
@@ -1561,12 +2009,10 @@
     return '<div class="historico-list">' + filtered.map(function(ev){
       var taller = state.talleres.find(function(t){ return t.id === ev.tallerId; });
       var rolInfo = ROLES.find(function(r){ return r.key === ev.rol; });
-      var respondidos = Object.keys(ev.respuestas || {}).length;
-      var estado = semaforoInfo(ev.respuestas).key;
-      return '<button type="button" class="historico-row" data-taller="' + ev.tallerId + '" data-rol="' + ev.rol + '">' +
+      return '<button type="button" class="historico-row" data-taller="' + ev.tallerId + '" data-miembro="' + ev.miembroId + '">' +
         '<span>' + escapeHTML(taller ? (tipoLabel(taller.tipo) + ' — ' + taller.nombre) : 'Actividad eliminada') + '</span>' +
         '<span>' + escapeHTML(ev.nombreMiembro) + ' <span class="historico-meta">— ' + escapeHTML(rolInfo ? rolInfo.label : ev.rol) + '</span></span>' +
-        '<span class="historico-meta"><span class="semaforo-dot semaforo-' + estado + '"></span> ' + respondidos + '/' + TOTAL_CRIT + '</span>' +
+        '<span class="historico-meta">' + ev.puntajeTotal + '/100</span>' +
         '<span class="historico-meta">' + formatFecha(ev.actualizado) + '</span>' +
         '</button>';
     }).join('') + '</div>';
@@ -1581,8 +2027,6 @@
     if(search) search.addEventListener('input', function(e){ historicoBusqueda = e.target.value; refresh(); });
     var selPuntaje = document.getElementById('historico-filtro-puntaje');
     if(selPuntaje) selPuntaje.addEventListener('change', function(e){ historicoFiltroPuntaje = e.target.value; refresh(); });
-    var selSemaforo = document.getElementById('historico-filtro-semaforo');
-    if(selSemaforo) selSemaforo.addEventListener('change', function(e){ historicoFiltroSemaforo = e.target.value; refresh(); });
   }
 
   function bindComisionesEvents(){
@@ -1639,14 +2083,54 @@
       if(e.target.closest('[data-action="save-mesa"]')){
         var com = currentComision();
         if(!com) return;
+        var cambios = [];
         ROLES.forEach(function(r){
           var input = el.querySelector('[data-role="' + r.key + '"]');
-          if(input) com.roles[r.key] = input.value.trim();
+          if(!input) return;
+          var nuevoNombre = input.value.trim();
+          var activo = miembroActivo(com.id, r.key);
+          var actual = activo ? activo.nombre.trim() : '';
+          if(nuevoNombre === actual) return;
+          cambios.push({ rolKey: r.key, nuevoNombre: nuevoNombre, miembro: activo });
         });
-        saveState();
-        clearDirty('mesa');
-        renderComisiones();
-        toast('Mesa directiva guardada');
+        if(cambios.length === 0){ clearDirty('mesa'); return; }
+        var aplicarCambiosMesa = function(){
+          cambios.forEach(function(c){
+            if(c.miembro){
+              if(!c.nuevoNombre){
+                c.miembro.activo = false;
+                c.miembro.hasta = new Date().toISOString();
+              }else{
+                c.miembro.nombre = c.nuevoNombre;
+              }
+            }else if(c.nuevoNombre){
+              state.miembros.push({
+                id: uid('mb'), comisionId: com.id, rolKey: c.rolKey, nombre: c.nuevoNombre,
+                activo:true, desde:new Date().toISOString(), hasta:'', continuidad:''
+              });
+            }
+          });
+          rederivarRoles();
+          saveState();
+          clearDirty('mesa');
+          renderComisiones();
+          toast('Mesa directiva guardada');
+        };
+        // Si alguna persona renombrada ya tiene evaluaciones, confirmamos que
+        // es un error de tipeo — un cambio de persona real debe pasar por
+        // "Sustituir" para no mezclar dos historiales en uno.
+        var conHistorial = cambios.filter(function(c){ return c.miembro && c.nuevoNombre && miembroTieneHistorial(c.miembro.id); });
+        if(conHistorial.length){
+          var nombres = conHistorial.map(function(c){ return c.miembro.nombre; }).join(', ');
+          showConfirmModal(
+            '¿Es un error de tipeo?',
+            'Estás cambiando el nombre de ' + nombres + ', que ya tiene evaluaciones guardadas. Si es una corrección de tipeo, confirma y se mantiene el mismo historial. Si en realidad es una persona distinta, cancela y usa "Sustituir" desde el panel del Subsecretario.',
+            'Sí, es un error de tipeo',
+            aplicarCambiosMesa
+          );
+        }else{
+          aplicarCambiosMesa();
+        }
         return;
       }
 
@@ -1673,10 +2157,9 @@
           comisionDetailId = tileId;
           comisionDetailTab = 'mesa';
           selTaller = '';
-          selRol = '';
+          selMiembroId = '';
           historicoBusqueda = '';
           historicoFiltroPuntaje = 'todos';
-          historicoFiltroSemaforo = 'todos';
           renderComisiones();
           window.scrollTo({ top:0, behavior:'smooth' });
         });
@@ -1702,7 +2185,7 @@
         confirmDiscardIfDirty(function(){
           var com = currentComision();
           if(!com) return;
-          state.talleres.push({ id: uid('tal'), comisionId: com.id, nombre:'Nueva actividad', fecha:'', oradores:[], tipo:'taller' });
+          state.talleres.push({ id: uid('tal'), comisionId: com.id, nombre:'Nueva actividad', fecha:'', oradores:[], tipo:'taller', cerrada:false });
           saveState();
           renderComisiones();
           requestAnimationFrame(function(){
@@ -1732,12 +2215,54 @@
         });
         return;
       }
+      var toggleCerrarBtn = e.target.closest('[data-action="toggle-cerrar-taller"]');
+      if(toggleCerrarBtn){
+        var cerrarRow = toggleCerrarBtn.closest('.taller-row');
+        var comCerrar = currentComision();
+        var tCerrar = comCerrar && state.talleres.find(function(x){ return x.id === cerrarRow.dataset.id; });
+        if(!tCerrar || !comCerrar) return;
+        if(tCerrar.cerrada){
+          tCerrar.cerrada = false;
+          saveState();
+          renderComisiones();
+          toast('Actividad reabierta');
+          return;
+        }
+        var pendientes = miembrosPendientesEnTaller(comCerrar, tCerrar);
+        if(pendientes.length === 0){
+          tCerrar.cerrada = true;
+          saveState();
+          renderComisiones();
+          toast('Actividad cerrada');
+          return;
+        }
+        var aviso = cerrarRow.querySelector('[data-cierre-aviso]');
+        if(aviso){
+          aviso.innerHTML = '<p class="hint-text" style="color:var(--danger);">Falta evaluar a: ' +
+            pendientes.map(function(m){
+              var r = ROLES.find(function(x){ return x.key === m.rolKey; });
+              return '<button type="button" class="hist-link" data-ir-evaluar-taller="' + tCerrar.id + '" data-ir-evaluar-miembro="' + m.id + '">' + escapeHTML(m.nombre) + (r ? ' (' + escapeHTML(r.label) + ')' : '') + '</button>';
+            }).join(', ') + '.</p>';
+        }
+        return;
+      }
+      var irEvaluarBtn = e.target.closest('[data-ir-evaluar-miembro]');
+      if(irEvaluarBtn){
+        var irTaller = irEvaluarBtn.dataset.irEvaluarTaller, irMiembro = irEvaluarBtn.dataset.irEvaluarMiembro;
+        confirmDiscardIfDirty(function(){
+          selTaller = irTaller;
+          selMiembroId = irMiembro;
+          comisionDetailTab = 'evaluar';
+          renderComisiones();
+        });
+        return;
+      }
       var histRow = e.target.closest('.historico-row');
       if(histRow){
-        var histTaller = histRow.dataset.taller, histRol = histRow.dataset.rol;
+        var histTaller = histRow.dataset.taller, histMiembro = histRow.dataset.miembro;
         confirmDiscardIfDirty(function(){
           selTaller = histTaller;
-          selRol = histRol;
+          selMiembroId = histMiembro;
           comisionDetailTab = 'evaluar';
           renderComisiones();
         });
@@ -1767,10 +2292,14 @@
 
   function progresoComisionHTML(com){
     var misTalleres = state.talleres.filter(function(t){ return t.comisionId === com.id; });
-    var asignadosCount = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); }).length;
-    var totalPosible = asignadosCount * misTalleres.length;
+    var asignados = ROLES.map(function(r){ return miembroActivo(com.id, r.key); }).filter(function(m){ return m && m.nombre.trim(); });
+    var totalPosible = asignados.length * misTalleres.length;
+    // Solo cuenta evaluaciones de miembros ACTIVOS: si no, tras una
+    // sustitución el numerador seguiría incluyendo las evaluaciones de la
+    // persona saliente mientras el denominador ya solo cuenta 4 activos, y
+    // el contador terminaría mostrando algo como "9/8".
     var totalHecho = state.evaluaciones.filter(function(ev){
-      return ev.comisionId === com.id && Object.keys(ev.respuestas || {}).length > 0;
+      return ev.comisionId === com.id && typeof ev.puntajeTotal === 'number' && asignados.some(function(m){ return m.id === ev.miembroId; });
     }).length;
     var rows = misTalleres.length === 0
       ? '<p class="hint-text" style="padding:.6rem 0;">Sin actividades registradas.</p>'
@@ -1786,33 +2315,39 @@
 
   function progresoTallerRowHTML(com, taller){
     var roleButtons = ROLES.map(function(r){
-      var nombre = (com.roles[r.key] || '').trim();
+      var m = miembroActivo(com.id, r.key);
+      var nombre = m ? m.nombre.trim() : '';
       var asignado = !!nombre;
-      var ev = state.evaluaciones.find(function(e){ return e.comisionId === com.id && e.tallerId === taller.id && e.rol === r.key; });
-      var hecho = asignado && ev && Object.keys(ev.respuestas || {}).length > 0;
+      var ev = asignado && state.evaluaciones.find(function(e){ return e.tallerId === taller.id && e.miembroId === m.id; });
+      var hecho = asignado && ev && typeof ev.puntajeTotal === 'number';
       var titulo = r.label + (asignado ? ' — ' + nombre : ' — sin asignar');
       return '<button type="button" class="role-star' + (hecho ? ' is-done' : '') + (!asignado ? ' is-empty' : '') + '"' +
-        (asignado ? ' data-com="' + com.id + '" data-taller="' + taller.id + '" data-rol="' + r.key + '"' : ' disabled') +
+        (asignado ? ' data-com="' + com.id + '" data-taller="' + taller.id + '" data-miembro="' + m.id + '"' : ' disabled') +
         ' title="' + escapeHTML(titulo) + '" aria-label="' + escapeHTML(titulo) + '">' +
         '<svg class="star-ic" aria-hidden="true"><use href="#star-shape"/></svg>' +
         '</button>';
     }).join('');
     return '<div class="progress-row">' +
-      '<span class="progress-taller">' + escapeHTML(taller.nombre) + '</span>' +
+      '<span class="progress-taller">' + escapeHTML(taller.nombre) + (taller.cerrada ? ' <span class="historico-meta">(cerrada)</span>' : '') + '</span>' +
       '<span class="progress-roles">' + roleButtons + '</span>' +
       '</div>';
   }
 
   // El clic sobre una estrella de progreso funciona igual en "Progreso" y en
   // "Admin" (comparten el mismo markup): salta directo a Evaluar ese taller.
+  // Pasa por confirmDiscardIfDirty (antes no lo hacía: un clic aquí podía
+  // tirar cambios sin guardar de otra evaluación en curso sin avisar).
   function handleProgressAreaClick(e){
     var btn = e.target.closest('.role-star');
     if(!btn || btn.disabled) return;
-    comisionDetailId = btn.dataset.com;
-    comisionDetailTab = 'evaluar';
-    selTaller = btn.dataset.taller;
-    selRol = btn.dataset.rol;
-    switchView('comisiones');
+    var comId = btn.dataset.com, tallerId = btn.dataset.taller, miembroId = btn.dataset.miembro;
+    confirmDiscardIfDirty(function(){
+      comisionDetailId = comId;
+      comisionDetailTab = 'evaluar';
+      selTaller = tallerId;
+      selMiembroId = miembroId;
+      switchView('comisiones');
+    });
   }
 
   function bindProgresoEvents(){
@@ -1823,92 +2358,202 @@
   /* ---------- Admin ---------- */
   function renderAdmin(){
     var el = document.getElementById('admin-content');
-    el.innerHTML =
-      adminDashboardStatsHTML() +
-      '<h2 class="admin-section-title">Aprobaciones pendientes</h2>' + adminAprobacionesHTML() +
-      '<h2 class="admin-section-title">Fases de los cortes</h2>' + adminConfigCortesHTML() +
-      '<h2 class="admin-section-title">Rendimiento por comisión y miembro</h2>' + adminRendimientoHTML() +
-      '<h2 class="admin-section-title">Semáforo por corte</h2>' + adminSemaforoHTML() +
-      '<h2 class="admin-section-title">Progreso de actividades por comisión</h2>' + adminProgresoHTML() +
-      '<h2 class="admin-section-title">Todas las evaluaciones</h2>' + adminTablaHTML();
-    bindAdminAprobacionesEvents();
-    bindAdminConfigCortesEvents();
-    bindAdminRendimientoEvents();
+    var desc = document.getElementById('admin-view-desc');
+    if(desc) desc.textContent = isSg()
+      ? 'Decide la continuidad de los casos que llegan de Subsecretaría y consulta el panel general de todas las comisiones.'
+      : 'Monitoreo por semáforo de todos los voluntarios, fases de los cortes y rendimiento de todas las comisiones.';
+    el.innerHTML = adminDashboardStatsHTML() + (isSg() ? renderAdminSgHTML() : renderAdminSubseHTML());
+    bindAdminEvents();
   }
 
   // Resumen tipo dashboard — pensado para que Subse/SG vean el estado
   // general del evento de un vistazo al entrar a Monitoreo.
   function adminDashboardStatsHTML(){
     var comisionesConMesa = state.comisiones.filter(function(c){ return ROLES.some(function(r){ return (c.roles[r.key] || '').trim(); }); }).length;
-    var actividadesEvaluadas = state.evaluaciones.filter(function(e){ return Object.keys(e.respuestas || {}).length > 0; }).length;
-    var cortesPendientes = state.cortes.filter(function(c){ return !c.aprobacion || c.aprobacion.estado === 'pendiente'; }).length;
-    var cortesAprobados = state.cortes.filter(function(c){ return c.aprobacion && c.aprobacion.estado === 'aprobado'; }).length;
+    var actividadesEvaluadas = state.evaluaciones.filter(function(e){ return typeof e.puntajeTotal === 'number'; }).length;
+    var casosPendientes = state.cortes.filter(function(c){ return c.requiereRevision && c.decisionSga.estado === 'pendiente'; }).length;
+    var casosDecididos = state.cortes.filter(function(c){ return c.decisionSga.estado !== 'pendiente'; }).length;
     return '<div class="dash-stats">' +
       '<div class="dash-stat"><div class="dash-stat-value">' + state.comisiones.length + '</div><div class="dash-stat-label">Comisiones totales</div></div>' +
       '<div class="dash-stat"><div class="dash-stat-value">' + comisionesConMesa + '</div><div class="dash-stat-label">Con mesa asignada</div></div>' +
       '<div class="dash-stat"><div class="dash-stat-value">' + actividadesEvaluadas + '</div><div class="dash-stat-label">Evaluaciones de actividad</div></div>' +
-      '<div class="dash-stat"><div class="dash-stat-value">' + cortesPendientes + '</div><div class="dash-stat-label">Cortes pendientes de aprobación</div></div>' +
-      '<div class="dash-stat"><div class="dash-stat-value">' + cortesAprobados + '</div><div class="dash-stat-label">Cortes aprobados</div></div>' +
+      '<div class="dash-stat"><div class="dash-stat-value">' + casosPendientes + '</div><div class="dash-stat-label">Casos pendientes del SG</div></div>' +
+      '<div class="dash-stat"><div class="dash-stat-value">' + casosDecididos + '</div><div class="dash-stat-label">Casos decididos</div></div>' +
     '</div>';
   }
 
-  // Jerarquía de aprobación: el Subsecretario evalúa un corte → queda
-  // pendiente → solo el Secretario General lo aprueba o rechaza aquí mismo,
-  // sin tener que entrar comisión por comisión.
-  function adminAprobacionesHTML(){
-    var pendientes = state.cortes
-      .filter(function(c){ return (!c.aprobacion || c.aprobacion.estado === 'pendiente') && Object.keys(c.respuestas || {}).length > 0; })
-      .sort(function(a, b){ return new Date(b.actualizado) - new Date(a.actualizado); });
-    if(pendientes.length === 0){
-      return emptyState('No hay aprobaciones pendientes', 'Cuando la Subsecretaría evalúe un corte, aparecerá aquí para que el Secretario General lo apruebe o rechace.');
+  function bindAdminEvents(){
+    bindAdminSgaEvents();
+    bindAdminConfigCortesEvents();
+    bindAdminRendimientoEvents();
+  }
+
+  function todosLosVoluntarios(){
+    var lista = [];
+    state.comisiones.forEach(function(com){
+      ROLES.forEach(function(r){
+        var m = miembroActivo(com.id, r.key);
+        if(m && m.nombre.trim()) lista.push({ miembro:m, com:com, rol:r });
+      });
+    });
+    return lista;
+  }
+
+  // Panel del Subsecretario: agrupado por semáforo en vez de una lista plana
+  // de las 15 comisiones — rojo/amarillo quedan expandidos (son los casos
+  // que necesitan atención), verde/gris colapsados.
+  function renderAdminSubseHTML(){
+    var voluntarios = todosLosVoluntarios();
+    if(voluntarios.length === 0){
+      return '<h2 class="admin-section-title">Monitoreo por semáforo</h2>' +
+        emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para monitorear su progreso aquí.');
     }
-    var rows = pendientes.map(function(c){
-      var com = state.comisiones.find(function(x){ return x.id === c.comisionId; });
-      var corteInfo = CORTES.find(function(x){ return x.key === c.corteTipo; });
-      var rolInfo = ROLES.find(function(x){ return x.key === c.rol; });
-      var acciones = canApprove()
-        ? '<div class="aprobacion-actions" style="margin-top:0;">' +
-            '<button type="button" class="btn btn-sm btn-approve" data-approve-corte="' + c.id + '">Aprobar</button>' +
-            '<button type="button" class="btn btn-sm btn-reject" data-reject-corte="' + c.id + '">Rechazar</button>' +
-          '</div>'
-        : '<span class="aprobacion-badge aprobacion-pendiente">Pendiente</span>';
-      return '<tr>' +
-        '<td>' + acciones + '</td>' +
-        '<td>' + escapeHTML(com ? com.sigla : '—') + '</td>' +
-        '<td>' + escapeHTML(c.nombreMiembro) + ' <span class="historico-meta">— ' + escapeHTML(rolInfo ? rolInfo.label : c.rol) + '</span></td>' +
-        '<td>' + escapeHTML(corteInfo ? corteInfo.label : c.corteTipo) + '</td>' +
-        '<td>' + formatFecha(c.actualizado) + '</td>' +
-        '</tr>';
+    var grupos = { rojo:[], amarillo:[], verde:[], gris:[] };
+    voluntarios.forEach(function(v){
+      var estado = semaforoDeMiembro(v.miembro.id);
+      grupos[estado.key].push({ v:v, estado:estado });
+    });
+    var orden = [['rojo','En riesgo'], ['amarillo','Seguimiento'], ['verde','Cumple'], ['gris','Sin evaluaciones']];
+    var secciones = orden.map(function(o){
+      var key = o[0], lista = grupos[key];
+      if(lista.length === 0) return '';
+      var abierto = key === 'rojo' || key === 'amarillo';
+      return '<details class="grupo-semaforo"' + (abierto ? ' open' : '') + '>' +
+        '<summary class="grupo-semaforo-head"><span class="semaforo-dot semaforo-' + key + '"></span>' + o[1] + ' <span class="grupo-semaforo-count">(' + lista.length + ')</span></summary>' +
+        lista.map(function(x){ return personaCardHTML(x.v, x.estado); }).join('') +
+        '</details>';
     }).join('');
-    return '<div class="admin-table-wrap"><table class="admin-table">' +
-      '<thead><tr><th>Acción</th><th>Comisión</th><th>Persona</th><th>Corte</th><th>Guardado</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table></div>';
+    return '<h2 class="admin-section-title">Monitoreo por semáforo</h2>' + secciones +
+      '<h2 class="admin-section-title">Fases de los cortes</h2>' + adminConfigCortesHTML() +
+      '<h2 class="admin-section-title">Rendimiento por comisión y miembro</h2>' + adminRendimientoHTML() +
+      '<h2 class="admin-section-title">Progreso de actividades por comisión</h2>' + adminProgresoHTML() +
+      '<h2 class="admin-section-title">Todas las evaluaciones</h2>' + adminTablaHTML();
   }
 
-  function bindAdminAprobacionesEvents(){
-    var approveButtons = document.querySelectorAll('[data-approve-corte]');
-    for(var i=0;i<approveButtons.length;i++){
-      approveButtons[i].addEventListener('click', function(e){ adminDecidirCorte(e.currentTarget.dataset.approveCorte, 'aprobado'); });
+  function personaCardHTML(v, estado){
+    var pendientesCorte = CORTES.filter(function(c){
+      return corteFaseActiva(c.key) && !state.cortes.some(function(x){ return x.miembroId === v.miembro.id && x.corteKey === c.key; });
+    });
+    var accionesCorte = pendientesCorte.map(function(c){
+      return '<button type="button" class="btn btn-secondary btn-sm" data-corte-miembro="' + v.miembro.id + '" data-corte-key="' + c.key + '" data-corte-com="' + v.com.id + '">Evaluar ' + escapeHTML(c.label) + '</button>';
+    }).join('');
+    return '<div class="persona-card">' +
+      '<div class="persona-card-head">' +
+        '<span><button type="button" class="hist-link" data-hist-miembro="' + v.miembro.id + '"><strong>' + escapeHTML(v.miembro.nombre) + '</strong></button> <span class="historico-meta">— ' + escapeHTML(v.rol.label) + ', ' + escapeHTML(v.com.sigla) + '</span></span>' +
+        '<span class="historico-meta">' + (estado.n === 0 ? 'sin evaluaciones' : estado.promedio + '% (' + estado.n + ')') + '</span>' +
+      '</div>' +
+      '<div class="persona-card-actions">' +
+        accionesCorte +
+        '<button type="button" class="btn btn-secondary btn-sm" data-action="sustituir-miembro" data-com="' + v.com.id + '" data-rol="' + v.rol.key + '">Sustituir</button>' +
+      '</div>' +
+      '</div>';
+  }
+
+  // Panel del Secretario General: la cola de casos que la Subsecretaría
+  // marcó en amarillo/rojo (verde nunca llega aquí) + un panel general por
+  // comisión para ver el cuadro completo sin abrir cada una.
+  function renderAdminSgHTML(){
+    return '<h2 class="admin-section-title">Casos pendientes de decisión</h2>' + adminSgaColaHTML() +
+      '<h2 class="admin-section-title">Panel general por comisión</h2>' + adminPanelGeneralHTML() +
+      '<h2 class="admin-section-title">Rendimiento por comisión y miembro</h2>' + adminRendimientoHTML() +
+      '<h2 class="admin-section-title">Progreso de actividades por comisión</h2>' + adminProgresoHTML() +
+      '<h2 class="admin-section-title">Todas las evaluaciones</h2>' + adminTablaHTML();
+  }
+
+  var sgaFiltroChip = 'todos'; // 'todos' | 'rojo' | 'amarillo'
+
+  function adminSgaColaHTML(){
+    var pendientes = state.cortes.filter(function(c){ return c.requiereRevision && c.decisionSga.estado === 'pendiente'; })
+      .sort(function(a,b){ return new Date(b.fecha) - new Date(a.fecha); });
+    var chips = [['todos','Todos'], ['rojo','Rojo'], ['amarillo','Amarillo']].map(function(o){
+      return '<button type="button" class="chip-filtro' + (sgaFiltroChip === o[0] ? ' is-active' : '') + '" data-sga-chip="' + o[0] + '">' +
+        (o[0] !== 'todos' ? '<span class="semaforo-dot semaforo-' + o[0] + '"></span>' : '') + o[1] + '</button>';
+    }).join('');
+    var chipsHTML = '<div class="admin-filters" style="gap:.5rem;">' + chips + '</div>';
+    var filtrados = sgaFiltroChip === 'todos' ? pendientes : pendientes.filter(function(c){ return c.semaforoAlMomento === sgaFiltroChip; });
+    if(filtrados.length === 0){
+      return chipsHTML + emptyState('No hay casos pendientes', 'Cuando la Subsecretaría registre un corte en amarillo o rojo, aparecerá aquí para tu decisión.');
     }
-    var rejectButtons = document.querySelectorAll('[data-reject-corte]');
-    for(var j=0;j<rejectButtons.length;j++){
-      rejectButtons[j].addEventListener('click', function(e){ adminDecidirCorte(e.currentTarget.dataset.rejectCorte, 'rechazado'); });
+    var rows = filtrados.map(function(c){
+      var com = state.comisiones.find(function(x){ return x.id === c.comisionId; });
+      var corteInfo = CORTES.find(function(x){ return x.key === c.corteKey; });
+      var rolInfo = ROLES.find(function(x){ return x.key === c.rolKey; });
+      var miembro = miembroPorId(c.miembroId);
+      return '<div class="persona-card">' +
+        '<div class="persona-card-head">' +
+          '<span><button type="button" class="hist-link" data-hist-miembro="' + c.miembroId + '"><strong>' + escapeHTML(miembro ? miembro.nombre : '—') + '</strong></button> <span class="historico-meta">— ' + escapeHTML(rolInfo ? rolInfo.label : c.rolKey) + ', ' + escapeHTML(com ? com.sigla : '—') + '</span></span>' +
+          '<span class="semaforo-dot semaforo-' + c.semaforoAlMomento + '" title="' + escapeHTML(semaforoLabel(c.semaforoAlMomento)) + '"></span>' +
+        '</div>' +
+        '<p class="hint-text">' + escapeHTML(corteInfo ? corteInfo.label : c.corteKey) + ' — ' + formatFecha(c.fecha) + (c.promedioAlMomento != null ? ' · Promedio en ese momento: ' + c.promedioAlMomento + '%' : '') + '</p>' +
+        (c.comentario ? '<p class="hint-text">' + escapeHTML(c.comentario) + '</p>' : '') +
+        '<div class="persona-card-actions">' +
+          '<button type="button" class="btn btn-approve btn-sm" data-decidir-corte="' + c.id + '" data-decidir-estado="continua">Continúa</button>' +
+          '<button type="button" class="btn btn-reject btn-sm" data-decidir-corte="' + c.id + '" data-decidir-estado="no-continua">No continúa</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+    return chipsHTML + rows;
+  }
+
+  // Por comisión: promedio general + barra de distribución de semáforo —
+  // permite comparar comisiones de un vistazo sin que un promedio general
+  // esconda casos rojos aislados (la barra los muestra igual aunque sean
+  // pocos).
+  function adminPanelGeneralHTML(){
+    var rows = state.comisiones.map(function(com){
+      var voluntarios = ROLES.map(function(r){ return miembroActivo(com.id, r.key); }).filter(function(m){ return m && m.nombre.trim(); });
+      if(voluntarios.length === 0) return '';
+      var estados = voluntarios.map(function(m){ return semaforoDeMiembro(m.id); });
+      var conPromedio = estados.filter(function(e){ return e.promedio != null; });
+      var promedioComision = conPromedio.length ? Math.round((conPromedio.reduce(function(s,e){ return s + e.promedio; }, 0) / conPromedio.length) * 10) / 10 : null;
+      var counts = { verde:0, amarillo:0, rojo:0, gris:0 };
+      estados.forEach(function(e){ counts[e.key]++; });
+      var total = voluntarios.length;
+      var barra = ['verde','amarillo','rojo','gris'].map(function(k){
+        var pct = total ? (counts[k] / total * 100) : 0;
+        return pct > 0 ? '<span class="semaforo-bar-' + k + '" style="width:' + pct + '%"></span>' : '';
+      }).join('');
+      return '<div class="persona-card">' +
+        '<div class="persona-card-head"><span><strong>' + escapeHTML(com.sigla) + '</strong> <span class="historico-meta">' + escapeHTML(com.nombre) + '</span></span>' +
+          '<span class="historico-meta">' + (promedioComision == null ? 'sin evaluaciones' : promedioComision + '%') + '</span></div>' +
+        '<div class="semaforo-bar">' + barra + '</div>' +
+        '<div class="semaforo-legend">' +
+          '<span><span class="semaforo-dot semaforo-verde"></span>Verde ' + counts.verde + '</span>' +
+          '<span><span class="semaforo-dot semaforo-amarillo"></span>Amarillo ' + counts.amarillo + '</span>' +
+          '<span><span class="semaforo-dot semaforo-rojo"></span>Rojo ' + counts.rojo + '</span>' +
+          '<span><span class="semaforo-dot semaforo-gris"></span>Gris ' + counts.gris + '</span>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+    if(!rows) return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para ver el panel general aquí.');
+    return rows;
+  }
+
+  function bindAdminSgaEvents(){
+    var chips = document.querySelectorAll('[data-sga-chip]');
+    for(var i=0;i<chips.length;i++){
+      chips[i].addEventListener('click', function(e){ sgaFiltroChip = e.currentTarget.dataset.sgaChip; renderAdmin(); });
+    }
+    var decidirBtns = document.querySelectorAll('[data-decidir-corte]');
+    for(var j=0;j<decidirBtns.length;j++){
+      decidirBtns[j].addEventListener('click', function(e){ adminDecidirCorte(e.currentTarget.dataset.decidirCorte, e.currentTarget.dataset.decidirEstado); });
     }
   }
 
+  // "No continúa" deja al voluntario marcado — eso es lo que habilita al
+  // Subsecretario a sustituirlo desde su panel; sin esto la decisión del SG
+  // no cambiaría ningún estado real.
   function adminDecidirCorte(corteId, estado){
     var rec = state.cortes.find(function(c){ return c.id === corteId; });
     if(!rec) return;
-    var comentario = '';
-    if(estado === 'rechazado') comentario = prompt('Comentario para la Subsecretaría (opcional):', '') || '';
-    rec.aprobacion = { estado: estado, comentario: comentario, fecha: new Date().toISOString() };
+    rec.decisionSga = { estado: estado, comentario:'', fecha: new Date().toISOString() };
+    var miembro = miembroPorId(rec.miembroId);
+    if(miembro) miembro.continuidad = estado;
     saveState();
-    toast(estado === 'aprobado' ? 'Corte aprobado' : 'Corte rechazado');
+    toast(estado === 'continua' ? 'Marcado como "Continúa"' : 'Marcado como "No continúa"');
     renderAdmin();
   }
 
-  // Cada corte es una fase con fecha de inicio configurable. Antes de esa
-  // fecha, "no evaluado" se muestra en gris en vez de rojo (ver semaforoInfoCorte).
   function adminConfigCortesHTML(){
     var campos = CORTES.map(function(c){
       var val = (state.configCortes && state.configCortes[c.key] && state.configCortes[c.key].inicio) || '';
@@ -1919,7 +2564,7 @@
       '</label>';
     }).join('');
     return '<div class="admin-filters">' + campos + '</div>' +
-      '<p class="hint-text">Antes de la fecha de inicio de un corte, quien todavía no tenga evaluación aparece en gris (fase aún no iniciada) en vez de rojo.</p>';
+      '<p class="hint-text">Antes de la fecha de inicio, el formulario de ese corte queda deshabilitado para la Subsecretaría.</p>';
   }
 
   function bindAdminConfigCortesEvents(){
@@ -1935,58 +2580,20 @@
     }
   }
 
-  // Rendimiento: para cada persona con nombre asignado, cuánto de la mesa
-  // directiva ya se evaluó (actividades) y qué % de "Sí" acumula entre todas
-  // sus evaluaciones (actividades + cortes) — un vistazo del desempeño real,
-  // no solo del estado de los cortes.
-  // Puntaje de un corte (0-100): % de criterios en "Sí" sobre el total de la
-  // rúbrica (no solo sobre lo respondido) — un corte a medio llenar pesa
-  // menos, igual que en el semáforo. null = corte sin evaluar.
-  function corteScore(rec){
-    if(!rec) return null;
-    var vals = Object.keys(rec.respuestas || {}).map(function(k){ return rec.respuestas[k]; });
-    if(vals.length === 0) return null;
-    var si = vals.filter(function(v){ return v === 'si'; }).length;
-    return Math.round((si / TOTAL_CRIT) * 100);
-  }
-
-  // Una fila por persona con nombre asignado: puntaje de cada corte (0-100,
-  // ponderado por su peso hacia el Puntaje Final) y un estatus de
-  // continuidad sugerido — igual a la metodología de cortes/pesos del
-  // informe (Corte 1 25% + Corte 2 25% + Evaluación Final 50%).
+  // Una fila por persona con nombre asignado: su semáforo acumulado y el
+  // promedio detrás de él — reemplaza la tabla vieja de puntaje por corte
+  // (los cortes ya no puntúan, ver semaforoDeMiembro).
   function computeRendimientoRows(){
     var rows = [];
     state.comisiones.forEach(function(com){
-      var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
-      asignados.forEach(function(r){
-        var misCortes = state.cortes.filter(function(c){ return c.comisionId === com.id && c.rol === r.key; });
-        var corteScores = {};
-        var corteEstados = {};
-        CORTES.forEach(function(c){
-          var rec = misCortes.find(function(x){ return x.corteTipo === c.key; });
-          corteScores[c.key] = corteScore(rec);
-          corteEstados[c.key] = semaforoInfoCorte(c.key, rec ? rec.respuestas : {}).key;
-        });
-        var puntajeFinal = Math.round(CORTES.reduce(function(sum, c){
-          return sum + (corteScores[c.key] || 0) * (c.peso / 100);
-        }, 0));
-        var evaluados = CORTES.filter(function(c){ return corteScores[c.key] !== null; }).length;
-        // Con cortes pendientes el Puntaje Final es parcial (los que faltan
-        // pesan 0) — no es justo emitir "recomienda sustitución" todavía,
-        // así que el estatus solo se decide cuando ya se evaluaron los 3.
-        var estatus = evaluados === 0 ? 'No evaluado'
-          : evaluados < CORTES.length ? 'Evaluación en curso'
-          : puntajeFinal >= 80 ? 'Continúa en el rol'
-          : puntajeFinal >= 50 ? 'Continúa con seguimiento'
-          : 'Se recomienda sustitución';
-        var semaforoGeneral = CORTES.some(function(c){ return corteEstados[c.key] === 'rojo'; }) ? 'rojo'
-          : CORTES.some(function(c){ return corteEstados[c.key] === 'amarillo'; }) ? 'amarillo'
-          : CORTES.some(function(c){ return corteEstados[c.key] === 'gris'; }) ? 'gris' : 'verde';
+      ROLES.forEach(function(r){
+        var m = miembroActivo(com.id, r.key);
+        if(!m || !m.nombre.trim()) return;
+        var estado = semaforoDeMiembro(m.id);
         rows.push({
-          comisionSigla: com.sigla, comisionNombre: com.nombre,
-          rolLabel: r.label, persona: com.roles[r.key],
-          corteScores: corteScores, corteEstados: corteEstados,
-          puntajeFinal: puntajeFinal, estatus: estatus, semaforoGeneral: semaforoGeneral
+          miembroId: m.id, comisionSigla: com.sigla, comisionNombre: com.nombre,
+          rolLabel: r.label, persona: m.nombre,
+          promedio: estado.promedio, n: estado.n, semaforo: estado.key, semaforoLabel: estado.label
         });
       });
     });
@@ -2004,44 +2611,34 @@
         var haystack = (row.persona + ' ' + row.comisionSigla + ' ' + row.comisionNombre).toLowerCase();
         if(haystack.indexOf(q) === -1) return false;
       }
-      if(adminFiltroPuntaje === 'alto' && row.puntajeFinal < 80) return false;
-      if(adminFiltroPuntaje === 'medio' && (row.puntajeFinal < 50 || row.puntajeFinal >= 80)) return false;
-      if(adminFiltroPuntaje === 'bajo' && row.puntajeFinal >= 50) return false;
-      if(adminFiltroSemaforo !== 'todos' && row.semaforoGeneral !== adminFiltroSemaforo) return false;
+      if(adminFiltroSemaforo !== 'todos' && row.semaforo !== adminFiltroSemaforo) return false;
       return true;
     });
     if(filtered.length === 0){
       return emptyState('Sin resultados', 'Ningún miembro coincide con los filtros actuales.');
     }
     var rowsHTML = filtered.map(function(row){
-      var corteCells = CORTES.map(function(c){
-        var score = row.corteScores[c.key];
-        var estado = row.corteEstados[c.key];
-        return '<td><span class="semaforo-dot semaforo-' + estado + '"></span> ' + (score === null ? '—' : score + '%') + '</td>';
-      }).join('');
       return '<tr>' +
         '<td>' + escapeHTML(row.comisionSigla) + '</td>' +
-        '<td>' + escapeHTML(row.persona) + ' <span class="historico-meta">— ' + escapeHTML(row.rolLabel) + '</span></td>' +
-        corteCells +
-        '<td>' + row.puntajeFinal + '/100</td>' +
-        '<td>' + escapeHTML(row.estatus) + '</td>' +
+        '<td><button type="button" class="hist-link" data-hist-miembro="' + row.miembroId + '">' + escapeHTML(row.persona) + '</button> <span class="historico-meta">— ' + escapeHTML(row.rolLabel) + '</span></td>' +
+        '<td><span class="semaforo-dot semaforo-' + row.semaforo + '"></span> ' + escapeHTML(row.semaforoLabel) + '</td>' +
+        '<td>' + (row.promedio == null ? '—' : row.promedio + '%') + '</td>' +
+        '<td>' + row.n + '</td>' +
         '</tr>';
     }).join('');
     return '<div class="admin-table-wrap"><table class="admin-table">' +
-      '<thead><tr><th>Comisión</th><th>Persona</th><th>Corte 1</th><th>Corte 2</th><th>Evaluación Final</th><th>Puntaje Final</th><th>Estatus de continuidad</th></tr></thead>' +
+      '<thead><tr><th>Comisión</th><th>Persona</th><th>Semáforo</th><th>Promedio</th><th>Evaluaciones</th></tr></thead>' +
       '<tbody>' + rowsHTML + '</tbody></table></div>';
   }
 
   function adminRendimientoHTML(){
-    var puntajeOptions = [['todos','Todos'],['alto','80–100'],['medio','50–79'],['bajo','0–49']];
-    var semaforoOptions = [['todos','Todos'],['verde','Verde'],['amarillo','Amarillo'],['rojo','Rojo'],['gris','Gris — fase sin iniciar']];
+    // Un solo select: "Puntaje" quedaría redundante con "Semáforo", son las
+    // mismas bandas ahora que el puntaje es el promedio detrás del semáforo.
+    var semaforoOptions = [['todos','Todos'],['verde','Verde'],['amarillo','Amarillo'],['rojo','Rojo'],['gris','Sin evaluaciones']];
     return '<div class="admin-filters">' +
       '<label class="select-field admin-filter-search">Buscar' +
         '<input type="text" id="admin-buscador" class="admin-search-input" placeholder="Persona o comisión…" value="' + escapeHTML(adminBusqueda) + '">' +
       '</label>' +
-      '<label class="select-field admin-filter-select">Puntaje<div class="select-wrap"><select id="admin-filtro-puntaje">' +
-        puntajeOptions.map(function(o){ return '<option value="' + o[0] + '"' + (adminFiltroPuntaje === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
-      '</select></div></label>' +
       '<label class="select-field admin-filter-select">Semáforo<div class="select-wrap"><select id="admin-filtro-semaforo">' +
         semaforoOptions.map(function(o){ return '<option value="' + o[0] + '"' + (adminFiltroSemaforo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
       '</select></div></label>' +
@@ -2056,37 +2653,8 @@
     };
     var search = document.getElementById('admin-buscador');
     if(search) search.addEventListener('input', function(e){ adminBusqueda = e.target.value; refreshRows(); });
-    var selPuntaje = document.getElementById('admin-filtro-puntaje');
-    if(selPuntaje) selPuntaje.addEventListener('change', function(e){ adminFiltroPuntaje = e.target.value; refreshRows(); });
     var selSemaforo = document.getElementById('admin-filtro-semaforo');
     if(selSemaforo) selSemaforo.addEventListener('change', function(e){ adminFiltroSemaforo = e.target.value; refreshRows(); });
-  }
-
-  // Semáforo: por cada comisión con mesa asignada, una fila por persona con
-  // un punto de color por corte — pensado para que la oficina/SG lo valide
-  // de un vistazo, sin entrar comisión por comisión.
-  function adminSemaforoHTML(){
-    var rows = state.comisiones.map(function(com){
-      var asignados = ROLES.filter(function(r){ return (com.roles[r.key] || '').trim(); });
-      return asignados.map(function(r){
-        var celdas = CORTES.map(function(c){
-          var rec = state.cortes.find(function(x){ return x.comisionId === com.id && x.rol === r.key && x.corteTipo === c.key; });
-          var estado = semaforoInfoCorte(c.key, rec ? rec.respuestas : {});
-          return '<td><span class="semaforo-dot semaforo-' + estado.key + '" title="' + escapeHTML(c.label + ': ' + estado.label) + '"></span></td>';
-        }).join('');
-        return '<tr>' +
-          '<td>' + escapeHTML(com.sigla) + '</td>' +
-          '<td>' + escapeHTML(com.roles[r.key]) + ' <span class="historico-meta">— ' + escapeHTML(r.label) + '</span></td>' +
-          celdas +
-          '</tr>';
-      }).join('');
-    }).join('');
-    if(!rows){
-      return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para ver su semáforo aquí.');
-    }
-    return '<div class="admin-table-wrap"><table class="admin-table">' +
-      '<thead><tr><th>Comisión</th><th>Persona</th><th>Corte 1</th><th>Corte 2</th><th>Evaluación Final</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table></div>';
   }
 
   function adminProgresoHTML(){
@@ -2097,7 +2665,8 @@
   }
 
   function adminTablaHTML(){
-    var regs = state.evaluaciones.slice().sort(function(a,b){ return new Date(b.actualizado) - new Date(a.actualizado); });
+    var regs = state.evaluaciones.filter(function(e){ return typeof e.puntajeTotal === 'number'; })
+      .slice().sort(function(a,b){ return new Date(b.actualizado) - new Date(a.actualizado); });
     if(regs.length === 0){
       return emptyState('Aún no hay datos', 'Cuando se guarden evaluaciones en cualquier comisión, aparecerán aquí.');
     }
@@ -2105,18 +2674,17 @@
       var com = state.comisiones.find(function(c){ return c.id === ev.comisionId; });
       var taller = state.talleres.find(function(t){ return t.id === ev.tallerId; });
       var rolInfo = ROLES.find(function(r){ return r.key === ev.rol; });
-      var respondidos = Object.keys(ev.respuestas || {}).length;
       return '<tr>' +
         '<td>' + escapeHTML(com ? com.sigla : '—') + '</td>' +
         '<td>' + escapeHTML(taller ? (tipoLabel(taller.tipo) + ' — ' + taller.nombre) : 'Actividad eliminada') + '</td>' +
         '<td>' + escapeHTML(rolInfo ? rolInfo.label : ev.rol) + '</td>' +
-        '<td>' + escapeHTML(ev.nombreMiembro) + '</td>' +
-        '<td>' + respondidos + '/' + TOTAL_CRIT + (respondidos === TOTAL_CRIT ? ' · completo' : '') + '</td>' +
+        '<td><button type="button" class="hist-link" data-hist-miembro="' + ev.miembroId + '">' + escapeHTML(ev.nombreMiembro) + '</button></td>' +
+        '<td>' + ev.puntajeTotal + '/100</td>' +
         '<td>' + formatFecha(ev.actualizado) + '</td>' +
         '</tr>';
     }).join('');
     return '<div class="admin-table-wrap"><table class="admin-table">' +
-      '<thead><tr><th>Comisión</th><th>Actividad</th><th>Rol</th><th>Persona</th><th>Respondidos</th><th>Actualizado</th></tr></thead>' +
+      '<thead><tr><th>Comisión</th><th>Actividad</th><th>Rol</th><th>Persona</th><th>Puntaje</th><th>Actualizado</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>';
   }
 
@@ -2130,9 +2698,11 @@
     comisionDetailId = null;
     comisionDetailTab = 'mesa';
     selTaller = '';
-    selRol = '';
+    selMiembroId = '';
     selCorteTipo = '';
     currentRespuestas = {};
+    currentComentarios = {};
+    currentPuntosDim = {};
     dirtyForms = {};
     updateHeaderCounter();
     var activeTab = document.querySelector('.nav-tab.is-active');
@@ -2140,13 +2710,17 @@
     toast('Datos de prueba restablecidos');
   }
 
-  // Genera un set de datos de ejemplo con volumen real (varias comisiones,
-  // actividades de distinto tipo, evaluaciones y cortes con resultados
-  // variados) para poder ver la app funcionando de punta a punta: filtros
-  // con resultados de sobra, semáforo en sus 4 colores, rendimiento con
-  // números reales. Es aditivo: no borra lo que ya tengas.
+  // Genera un set de datos de ejemplo con volumen real, sobre TODAS las
+  // comisiones (para que cualquier EyC vea algo al entrar) y con casos
+  // deliberados — no accidentales — de cada situación que la app debe
+  // manejar: alguien en cada banda de semáforo por comisión, un voluntario
+  // sustituido con historial, cortes verdes que NO entran a la cola del SG,
+  // casos ya decididos (continúa / no continúa) y un corte cuyo promedio
+  // congelado difiere a propósito del promedio actual (para probar que se
+  // lee el snapshot, no que se recalcula). Es aditivo: no borra lo que ya
+  // tengas.
   function seedRichDemoData(){
-    if(!confirm('¿Cargar un set de datos de ejemplo completo? Se agregan actividades, evaluaciones y cortes de muestra en varias comisiones (no borra lo que ya tengas, se suma).')) return;
+    if(!confirm('¿Cargar un set de datos de ejemplo completo? Se agregan actividades, evaluaciones y cortes de muestra en todas las comisiones (no borra lo que ya tengas, se suma).')) return;
 
     var hoy = new Date();
     function fechaOffset(dias){
@@ -2154,91 +2728,178 @@
       d.setDate(d.getDate() + dias);
       return d.toISOString().slice(0, 10);
     }
+    function fechaISO(dias){ return fechaOffset(dias) + 'T12:00:00.000Z'; }
 
-    // Corte 1 ya empezó hace tiempo, Corte 2 empezó hace poco, la Evaluación
-    // Final todavía no — así se ven los 4 colores del semáforo en acción.
+    // Corte 1 y Corte 2 ya empezaron; la Evaluación Final todavía no — así
+    // su formulario aparece deshabilitado hasta esa fecha.
     state.configCortes = {
       corte1: { inicio: fechaOffset(-20) },
-      corte2: { inicio: fechaOffset(-3) },
+      corte2: { inicio: fechaOffset(-5) },
       final: { inicio: fechaOffset(10) }
     };
 
-    var patrones = [
-      RUBRICA_FLAT_IDS.map(function(){ return 'si'; }),
-      ['si','si','no','si','si','no','si'],
-      RUBRICA_FLAT_IDS.map(function(){ return 'no'; })
-    ];
-    function respuestasDe(patronIdx){
-      var patron = patrones[patronIdx % patrones.length];
-      var respuestas = {};
-      RUBRICA_FLAT_IDS.forEach(function(critId, i){ respuestas[critId] = patron[i]; });
-      return respuestas;
+    // Tres perfiles de respuesta+puntos que caen deliberadamente en cada
+    // banda del semáforo — no por accidente de un patrón posicional.
+    var PERFILES = {
+      alto: {
+        respuestas: { A1:'si', A2:'si', A3:'si', B1:'no', D1:'si', E1:'si', F1:'si' },
+        comentarios: {},
+        puntosDim: { B:3.5, D:3.5, E:3.5, F:3 } // A=85 + 13.5 = 98.5
+      },
+      medio: {
+        respuestas: { A1:'si', A2:'si', A3:'no', B1:'no', D1:'si', E1:'no', F1:'si' },
+        comentarios: { A3:'Llegó tarde a la última sesión.', E1:'Hubo un desacuerdo puntual con otro miembro, ya resuelto.' },
+        puntosDim: { B:2, D:2, E:1.5, F:2 } // A=56.67 + 7.5 = 64.17
+      },
+      bajo: {
+        respuestas: { A1:'si', A2:'no', A3:'no', B1:'si', D1:'no', E1:'no', F1:'no' },
+        comentarios: {
+          A2:'Faltó a dos sesiones sin aviso.', A3:'Entregas fuera de plazo.',
+          B1:'Desconoce el procedimiento parlamentario básico.', D1:'Comunicación deficiente con la mesa.',
+          E1:'Conflicto recurrente con otros miembros.', F1:'Falta de compromiso con el proceso.'
+        },
+        puntosDim: { B:1, D:1, E:1, F:1 } // A=28.33 + 4 = 32.33
+      }
+    };
+    function nuevaEvaluacion(com, taller, miembro, perfil, fecha){
+      return {
+        id: uid('ev'), comisionId: com.id, tallerId: taller.id, miembroId: miembro.id,
+        rol: miembro.rolKey, nombreMiembro: miembro.nombre,
+        respuestas: Object.assign({}, perfil.respuestas),
+        comentarios: Object.assign({}, perfil.comentarios),
+        puntosDim: Object.assign({}, perfil.puntosDim),
+        puntajeA: calcPuntajeA(perfil.respuestas),
+        puntajeTotal: computePuntaje(perfil.respuestas, perfil.puntosDim),
+        actualizado: fecha
+      };
+    }
+    function nuevoCorte(com, miembro, corteKey, fecha, comentario){
+      var estado = semaforoDeMiembro(miembro.id);
+      var requiere = estado.key === 'amarillo' || estado.key === 'rojo';
+      return {
+        id: uid('corte'), comisionId: com.id, miembroId: miembro.id, rolKey: miembro.rolKey, corteKey: corteKey,
+        comentario: comentario || '',
+        semaforoAlMomento: estado.key, promedioAlMomento: estado.promedio,
+        requiereRevision: requiere, fecha: fecha,
+        decisionSga: { estado:'pendiente', comentario:'', fecha:'' }
+      };
+    }
+    function ensureMiembro(com, fc, rolKey){
+      var activo = miembroActivo(com.id, rolKey);
+      if(activo && activo.nombre.trim()) return activo;
+      var nombre = (fc.rolesDemo && fc.rolesDemo[rolKey]) || '';
+      if(!nombre) return activo || null;
+      if(activo){ activo.nombre = nombre; return activo; }
+      var nuevo = { id: uid('mb'), comisionId: com.id, rolKey: rolKey, nombre: nombre, activo:true, desde: fechaISO(-30), hasta:'', continuidad:'' };
+      state.miembros.push(nuevo);
+      return nuevo;
     }
 
-    var demoComisiones = ['ctd', 'pnud', 'cop', 'ams', 'csnu'];
     var actividadesPlantilla = [
       { tipo:'taller', nombre:'Taller de procedimiento parlamentario', dias:-15 },
       { tipo:'encuentro', nombre:'Encuentro de bienvenida', dias:-10 },
       { tipo:'reunion', nombre:'Reunión de seguimiento', dias:-2 }
     ];
+    // En estas comisiones, además de actividades/evaluaciones, se registran
+    // cortes — así la cola del SG tiene volumen real sin saturarla en las 15.
+    var comisionesConCorte = ['ctd', 'pnud', 'cop', 'ams', 'csnu', 'onudc'];
 
-    demoComisiones.forEach(function(comId, idx){
-      var com = state.comisiones.find(function(c){ return c.id === comId; });
-      var fc = FIXED_COMISIONES.find(function(f){ return f.id === comId; });
-      if(!com || !fc) return;
-      ROLES.forEach(function(r){
-        if(!com.roles[r.key] && fc.rolesDemo) com.roles[r.key] = fc.rolesDemo[r.key];
-      });
-      var directorKey = com.roles.director ? ['director'] : [];
+    state.comisiones.forEach(function(com, idx){
+      var fc = FIXED_COMISIONES.find(function(f){ return f.id === com.id; });
+      if(!fc) return;
+      var director = ensureMiembro(com, fc, 'director');
+      var adjunto1 = ensureMiembro(com, fc, 'adjunto1');
+      var adjunto2 = ensureMiembro(com, fc, 'adjunto2');
+      // El aprendiz se deja SIN evaluar en todas las comisiones a propósito:
+      // así siempre hay alguien en gris para ver ese estado en el panel.
+      var oradores = director ? [director.id] : [];
 
       var misActividades = actividadesPlantilla.map(function(pl){
-        var t = { id: uid('tal'), comisionId: com.id, nombre: pl.nombre, tipo: pl.tipo, fecha: fechaOffset(pl.dias), oradores: directorKey };
+        var t = { id: uid('tal'), comisionId: com.id, nombre: pl.nombre, tipo: pl.tipo, fecha: fechaOffset(pl.dias), oradores: oradores.slice(), cerrada:false };
         state.talleres.push(t);
         return t;
       });
 
-      misActividades.forEach(function(act, ai){
-        ROLES.forEach(function(r, ri){
-          if(!com.roles[r.key]) return;
-          if((idx + ai + ri) % 4 === 3) return; // deja algunas combinaciones sin evaluar
-          var respuestas = respuestasDe(idx + ai + ri);
-          var comentarios = {};
-          if((ai + ri) % 2 === 0) comentarios[RUBRICA_FLAT_IDS[0]] = 'Comentario de ejemplo generado automáticamente.';
-          state.evaluaciones.push({
-            id: uid('ev'), comisionId: com.id, tallerId: act.id, rol: r.key,
-            nombreMiembro: com.roles[r.key], respuestas: respuestas, comentarios: comentarios,
-            actualizado: act.fecha + 'T12:00:00.000Z'
-          });
-        });
-      });
-
-      // Estados de aprobación variados, para poder ver la cola de
-      // aprobaciones y los 3 estados posibles ya en Monitoreo.
-      var aprobacionesDemo = [
-        { estado:'pendiente', comentario:'', fecha:'' },
-        { estado:'aprobado', comentario:'', fecha: fechaOffset(-14) + 'T09:00:00.000Z' },
-        { estado:'rechazado', comentario:'Faltan evidencias de asistencia.', fecha: fechaOffset(-14) + 'T09:00:00.000Z' }
-      ];
-      ROLES.forEach(function(r, ri){
-        if(!com.roles[r.key]) return;
-        state.cortes.push({
-          id: uid('corte'), comisionId: com.id, rol: r.key, corteTipo:'corte1',
-          nombreMiembro: com.roles[r.key], respuestas: respuestasDe(idx + ri), comentarios:{},
-          aprobacion: aprobacionesDemo[(idx + ri) % aprobacionesDemo.length],
-          actualizado: fechaOffset(-15) + 'T12:00:00.000Z'
-        });
-        if(r.key === 'director'){
-          state.cortes.push({
-            id: uid('corte'), comisionId: com.id, rol: r.key, corteTipo:'corte2',
-            nombreMiembro: com.roles[r.key], respuestas: respuestasDe(0), comentarios:{},
-            aprobacion: { estado:'pendiente', comentario:'', fecha:'' },
-            actualizado: fechaOffset(-2) + 'T12:00:00.000Z'
+      // 'ctd': deja el director con una sola evaluación al principio para
+      // poder tomar el corte con ESE promedio, y evalúa las 2 actividades
+      // restantes después — su corte queda con un promedioAlMomento
+      // desactualizado a propósito frente al promedio actual.
+      var esCasoSnapshot = com.id === 'ctd';
+      if(director){
+        if(esCasoSnapshot){
+          state.evaluaciones.push(nuevaEvaluacion(com, misActividades[0], director, PERFILES.alto, misActividades[0].fecha + 'T12:00:00.000Z'));
+        }else{
+          misActividades.forEach(function(act){
+            state.evaluaciones.push(nuevaEvaluacion(com, act, director, PERFILES.alto, act.fecha + 'T12:00:00.000Z'));
           });
         }
-      });
-      // La Evaluación Final se deja sin evaluar en todas — su fase todavía
-      // no empieza, así se ve el estado gris en Admin y en Cortes.
+      }
+      if(adjunto1){
+        misActividades.forEach(function(act){
+          state.evaluaciones.push(nuevaEvaluacion(com, act, adjunto1, PERFILES.medio, act.fecha + 'T12:00:00.000Z'));
+        });
+      }
+      if(adjunto2){
+        misActividades.forEach(function(act){
+          state.evaluaciones.push(nuevaEvaluacion(com, act, adjunto2, PERFILES.bajo, act.fecha + 'T12:00:00.000Z'));
+        });
+      }
+
+      if(comisionesConCorte.indexOf(com.id) !== -1){
+        // Director: verde → comentario opcional, y NO debe entrar a la cola
+        // del SG (requiereRevision queda false).
+        if(director){
+          state.cortes.push(nuevoCorte(com, director, 'corte1', fechaISO(esCasoSnapshot ? -14 : -15), 'Buen desempeño general, sin observaciones.'));
+        }
+        // Adjunto I: amarillo → comentario obligatorio, entra a la cola.
+        if(adjunto1){
+          state.cortes.push(nuevoCorte(com, adjunto1, 'corte1', fechaISO(-15), 'Cumple parcialmente — hay que darle seguimiento en comunicación.'));
+        }
+        // Adjunto II: rojo → comentario obligatorio, entra a la cola. En dos
+        // comisiones ya se ve DECIDIDO por el SG (una continúa, otra no),
+        // para no dejar la cola vacía de casos resueltos.
+        if(adjunto2){
+          var corteAdj2 = nuevoCorte(com, adjunto2, 'corte1', fechaISO(-15), 'Ausencias reiteradas y bajo cumplimiento de entregas.');
+          if(com.id === 'ctd'){
+            corteAdj2.decisionSga = { estado:'continua', comentario:'Se le da una oportunidad más con seguimiento cercano.', fecha: fechaISO(-10) };
+            adjunto2.continuidad = 'continua';
+          }else if(com.id === 'pnud'){
+            corteAdj2.decisionSga = { estado:'no-continua', comentario:'Reincidente pese al seguimiento del Corte 1.', fecha: fechaISO(-10) };
+            adjunto2.continuidad = 'no-continua';
+          }
+          state.cortes.push(corteAdj2);
+        }
+      }
+
+      // Ahora sí, para 'ctd' se agregan las 2 evaluaciones restantes del
+      // director — su promedio actual sube, pero el corte ya guardado
+      // arriba se queda con la foto vieja (esto es lo que se está probando).
+      if(esCasoSnapshot && director){
+        misActividades.slice(1).forEach(function(act){
+          state.evaluaciones.push(nuevaEvaluacion(com, act, director, PERFILES.alto, act.fecha + 'T12:00:00.000Z'));
+        });
+      }
+      // La Evaluación Final se deja sin registrar en todas — su fase
+      // todavía no empieza.
     });
+
+    // Sustitución de ejemplo: en PNUD, el Adjunto II original (evaluado
+    // arriba, banda "bajo", con corte ya decidido "no continúa") se
+    // sustituye — queda archivado con su historial intacto, y la persona
+    // entrante arranca sin evaluaciones.
+    var comPnud = state.comisiones.find(function(c){ return c.id === 'pnud'; });
+    if(comPnud){
+      var salienteId = miembroActivo(comPnud.id, 'adjunto2');
+      if(salienteId){
+        salienteId.activo = false;
+        salienteId.hasta = fechaISO(-8);
+        state.miembros.push({
+          id: uid('mb'), comisionId: comPnud.id, rolKey:'adjunto2', nombre:'Yolanda Marte',
+          activo:true, desde: fechaISO(-8), hasta:'', continuidad:''
+        });
+        rederivarRoles();
+      }
+    }
 
     saveState();
     updateHeaderCounter();
@@ -2260,12 +2921,43 @@
     document.getElementById('btn-seed-demo').addEventListener('click', seedRichDemoData);
     document.getElementById('discard-modal-cancel').addEventListener('click', function(){ resolveDiscardModal(false); });
     document.getElementById('discard-modal-confirm').addEventListener('click', function(){ resolveDiscardModal(true); });
+    document.getElementById('confirm-modal-cancel').addEventListener('click', function(){ resolveConfirmModal(false); });
+    document.getElementById('confirm-modal-ok').addEventListener('click', function(){ resolveConfirmModal(true); });
+    document.getElementById('sustituir-modal-cancel').addEventListener('click', cerrarSustituirModal);
+    document.getElementById('sustituir-modal-ok').addEventListener('click', confirmarSustitucion);
+    document.getElementById('sustituir-modal-input').addEventListener('keydown', function(e){
+      if(e.key === 'Enter') confirmarSustitucion();
+    });
+    document.getElementById('historico-modal-close').addEventListener('click', cerrarHistoricoModal);
+    document.getElementById('historico-modal').addEventListener('click', function(e){
+      if(e.target.id === 'historico-modal') cerrarHistoricoModal();
+    });
     document.addEventListener('click', function(e){
+      // El disparador del histórico va primero y con stopPropagation: puede
+      // vivir dentro de una .historico-row (que también navega a Evaluar al
+      // hacer clic) y no queremos las dos cosas a la vez.
+      var histBtn = e.target.closest('[data-hist-miembro]');
+      if(histBtn){ e.stopPropagation(); abrirHistoricoModal(histBtn.dataset.histMiembro); return; }
+      var sustBtn = e.target.closest('[data-action="sustituir-miembro"]');
+      if(sustBtn){ e.stopPropagation(); abrirSustituirModal(sustBtn.dataset.com, sustBtn.dataset.rol); return; }
+      var corteBtn = e.target.closest('[data-corte-miembro]');
+      if(corteBtn){
+        e.stopPropagation();
+        var ccCom = corteBtn.dataset.corteCom, ccMiembro = corteBtn.dataset.corteMiembro, ccKey = corteBtn.dataset.corteKey;
+        confirmDiscardIfDirty(function(){
+          comisionDetailId = ccCom;
+          comisionDetailTab = 'cortes';
+          selMiembroId = ccMiembro;
+          selCorteTipo = ccKey;
+          switchView('comisiones');
+        });
+        return;
+      }
       var gotoBtn = e.target.closest('[data-goto]');
       if(gotoBtn){ var view = gotoBtn.dataset.goto; confirmDiscardIfDirty(function(){ switchView(view); }); return; }
       var gotoSub = e.target.closest('[data-goto-subtab]');
       if(gotoSub){ var subtab = gotoSub.dataset.gotoSubtab; confirmDiscardIfDirty(function(){ comisionDetailTab = subtab; renderComisiones(); }); return; }
-    });
+    }, true);
     bindComisionesEvents();
     bindProgresoEvents();
   }
