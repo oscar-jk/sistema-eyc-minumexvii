@@ -137,6 +137,10 @@
   .theme-toggle{width:36px;height:36px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;transition:border-color .15s var(--ease),color .15s var(--ease);}
   .theme-toggle:hover{border-color:var(--border-strong);color:var(--text);}
   .theme-toggle svg{width:16px;height:16px;}
+  /* Mismo tratamiento visual que .theme-toggle (círculo de 36px) pero como
+     clase propia: no comparte semántica con el de tema, sólo el aspecto. */
+  .help-btn{width:36px;height:36px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;font-weight:700;font-size:.92rem;transition:border-color .15s var(--ease),color .15s var(--ease);}
+  .help-btn:hover{border-color:var(--border-strong);color:var(--text);}
   .theme-icon-dark{display:none;}
   :root[data-theme="dark"] .theme-icon-light{display:none;}
   :root[data-theme="dark"] .theme-icon-dark{display:block;}
@@ -349,8 +353,14 @@
      igual que discard-modal: si se inyectara dentro de .container heredaría
      su stacking context y quedaría detrás del footer pese al z-index:200. */
   .modal-box-lg{max-width:560px;max-height:calc(100vh - 4rem);overflow-y:auto;position:relative;padding-top:2.75rem;}
+  /* Variante media (onboarding por rol) — más aire que el confirm de 380px
+     para una lista de 3-4 pasos, sin llegar al ancho del histórico. */
+  .modal-box-md{max-width:460px;max-height:calc(100vh - 4rem);overflow-y:auto;position:relative;padding-top:2.75rem;}
   .modal-close{position:absolute;top:.9rem;right:.9rem;width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-2);color:var(--text-secondary);font-size:1.3rem;line-height:1;cursor:pointer;}
   .modal-close:hover{color:var(--text);}
+  .onboarding-list{margin:0 0 1.25rem;padding-left:1.15rem;display:flex;flex-direction:column;gap:.85rem;}
+  .onboarding-list li{color:var(--text-secondary);font-size:.92rem;line-height:1.5;}
+  .onboarding-list li strong{color:var(--text);font-weight:600;}
 
   /* Barra de guardado fija — se usa en Evaluar (EyC) para que "Guardar" esté
      siempre visible sin tener que bajar hasta el final del formulario.
@@ -602,6 +612,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 16l4-4-4-4M20 12H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
+      <button type="button" class="help-btn" id="help-btn" aria-label="Cómo funciona este panel" title="Cómo funciona este panel" hidden>?</button>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro/oscuro">
         <svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 12H2.1M21.9 12h-2.4M6.3 6.3 4.6 4.6M19.4 19.4l-1.7-1.7M17.7 6.3l1.7-1.7M4.6 19.4l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         <svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
@@ -765,6 +776,21 @@
   </div>
 </div>
 
+<!-- Onboarding por rol: se abre solo una vez, la primera vez que este
+     navegador entra con cada rol (ver ONBOARDING_SEEN_KEY) — después queda
+     disponible en cualquier momento desde el botón "?" del encabezado. -->
+<div class="modal-overlay" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-modal-title">
+  <div class="modal-box modal-box-md">
+    <button type="button" class="modal-close" id="onboarding-modal-close" aria-label="Cerrar">&times;</button>
+    <h3 id="onboarding-modal-title"></h3>
+    <p id="onboarding-modal-intro"></p>
+    <ol class="onboarding-list" id="onboarding-modal-list"></ol>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary" id="onboarding-modal-ok">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <!-- Histórico de un voluntario, accesible en un clic desde cualquier panel
      donde aparece su nombre — mezcla evaluaciones de taller y comentarios
      de corte, más reciente primero. -->
@@ -875,6 +901,12 @@
   // role: 'eyc' (atado a una comisión), 'subse' o 'sg' (globales).
   var SESSION_KEY = 'eyc_rubrica_session';
   var session = loadSession();
+
+  // Qué roles ya vieron su modal de bienvenida en este navegador — no es
+  // por persona (el login no pide contraseña, cualquiera puede entrar como
+  // cualquier rol), así que se guarda por rol, no por sesión. Después de la
+  // primera vez sigue disponible desde el botón "?" del encabezado.
+  var ONBOARDING_SEEN_KEY = 'eyc_rubrica_onboarding_seen';
 
   // Cambios sin guardar por formulario (mesa directiva, una actividad puntual,
   // evaluar, cortes...) — bloquean la navegación hasta confirmar.
@@ -1034,6 +1066,56 @@
 
   function roleLabel(role){
     return role === 'eyc' ? 'Evaluación y Control' : role === 'subse' ? 'Subsecretario/a' : role === 'sg' ? 'Secretario/a General' : '';
+  }
+
+  /* ---------- Onboarding por rol ---------- */
+  var ROLE_ONBOARDING = {
+    eyc: {
+      intro: 'Así se organiza el panel de tu comisión:',
+      pasos: [
+        { label: 'Mesa directiva', desc: 'registra el nombre completo de quien ocupa cada cargo.' },
+        { label: 'Actividades', desc: 'registra los talleres o actividades que tu comisión realiza.' },
+        { label: 'Evaluar', desc: 'completa la rúbrica de cada persona por actividad.' },
+        { label: 'Histórico', desc: 'consulta las evaluaciones anteriores de cualquier miembro.' }
+      ]
+    },
+    subse: {
+      intro: 'Así se organiza tu panel de Monitoreo:',
+      pasos: [
+        { label: 'Casos', desc: 'el semáforo de cada voluntario según su desempeño — desde aquí registras cada corte de seguimiento y puedes sustituir a alguien.' },
+        { label: 'Fases de los cortes', desc: 'configura cuándo empieza cada corte (botón arriba, junto a las estadísticas).' },
+        { label: 'Rendimiento / Evaluaciones', desc: 'vistas agregadas del desempeño de todas las comisiones.' }
+      ]
+    },
+    sg: {
+      intro: 'Así se organiza tu panel de Monitoreo:',
+      pasos: [
+        { label: 'Casos', desc: 'decide la continuidad de quienes Subsecretaría marcó en riesgo — Continúa o No continúa, con comentario.' },
+        { label: 'Panel general', desc: 'resumen del estado de todas las comisiones.' },
+        { label: 'Rendimiento / Evaluaciones', desc: 'vistas agregadas del desempeño de todas las comisiones.' }
+      ]
+    }
+  };
+  function getOnboardingSeen(){
+    try{ return JSON.parse(localStorage.getItem(ONBOARDING_SEEN_KEY)) || {}; }catch(e){ return {}; }
+  }
+  function marcarOnboardingVisto(role){
+    var seen = getOnboardingSeen();
+    seen[role] = true;
+    try{ localStorage.setItem(ONBOARDING_SEEN_KEY, JSON.stringify(seen)); }catch(e){}
+  }
+  function abrirOnboardingModal(role){
+    var data = ROLE_ONBOARDING[role];
+    if(!data) return;
+    document.getElementById('onboarding-modal-title').textContent = roleLabel(role) + ' — así funciona tu panel';
+    document.getElementById('onboarding-modal-intro').textContent = data.intro;
+    document.getElementById('onboarding-modal-list').innerHTML = data.pasos.map(function(p){
+      return '<li><strong>' + escapeHTML(p.label) + '</strong> — ' + escapeHTML(p.desc) + '</li>';
+    }).join('');
+    document.getElementById('onboarding-modal').classList.add('is-open');
+  }
+  function cerrarOnboardingModal(){
+    document.getElementById('onboarding-modal').classList.remove('is-open');
   }
 
   /* ---------- Cambios sin guardar ---------- */
@@ -1346,6 +1428,7 @@
       document.getElementById('view-login').classList.add('is-active');
       document.getElementById('nav-tabs').hidden = true;
       document.getElementById('session-badge').hidden = true;
+      document.getElementById('help-btn').hidden = true;
       populateLoginComisiones();
       var sel = document.getElementById('login-comision-select');
       if(sel) sel.value = '';
@@ -1371,6 +1454,12 @@
     comisionDetailId = isEyc() ? session.comisionId : null;
     comisionDetailTab = canSeeCortes() ? comisionDetailTab : 'mesa';
     switchView(isSecretaria() ? 'admin' : 'comisiones');
+    document.getElementById('help-btn').hidden = false;
+    var onboardingSeen = getOnboardingSeen();
+    if(!onboardingSeen[session.role]){
+      marcarOnboardingVisto(session.role);
+      abrirOnboardingModal(session.role);
+    }
   }
 
   function bindLoginEvents(){
@@ -3110,6 +3199,14 @@
     document.getElementById('btn-seed-demo').addEventListener('click', seedRichDemoData);
     document.getElementById('btn-cortes-config').addEventListener('click', abrirCortesConfigModal);
     document.getElementById('cortes-config-modal-close').addEventListener('click', cerrarCortesConfigModal);
+    document.getElementById('help-btn').addEventListener('click', function(){
+      if(session) abrirOnboardingModal(session.role);
+    });
+    document.getElementById('onboarding-modal-close').addEventListener('click', cerrarOnboardingModal);
+    document.getElementById('onboarding-modal-ok').addEventListener('click', cerrarOnboardingModal);
+    document.getElementById('onboarding-modal').addEventListener('click', function(e){
+      if(e.target.id === 'onboarding-modal') cerrarOnboardingModal();
+    });
     document.getElementById('discard-modal-cancel').addEventListener('click', function(){ resolveDiscardModal(false); });
     document.getElementById('discard-modal-confirm').addEventListener('click', function(){ resolveDiscardModal(true); });
     document.getElementById('confirm-modal-cancel').addEventListener('click', function(){ resolveConfirmModal(false); });
