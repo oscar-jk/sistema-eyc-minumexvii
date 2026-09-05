@@ -1,19 +1,20 @@
 /**
  * Sistema EyC — puente entre el sitio estático y una Google Sheet.
+ * Es la base de datos completa: roster, mesa directiva, actividades,
+ * evaluaciones, cortes Y las cuentas de acceso (login por usuario/contraseña).
  *
  * ESTADO DE ESTE ARCHIVO (léelo antes de tocar nada):
  *
- *   - `doGet` con `action=getComisiones` está LISTO PARA DESPLEGAR — es todo
- *     lo que la app necesita hoy (el roster de comisiones para el login).
- *     Léelo, pruébalo, listo.
- *
- *   - Todo lo demás (los 11 `doPost` de más abajo, uno por cada método de
- *     js/data-service.js) es REFERENCIA / FUTURO, no probado en un
- *     despliegue real. El día que el sitio necesite guardar mesa
- *     directiva / actividades / evaluaciones / cortes en la Sheet en vez
- *     de en localStorage, ese es el punto de partida — pero antes de
- *     activarlo de verdad, lee los riesgos en README.md (CORS, sin
- *     transacciones reales, la URL pública no es seguridad de verdad).
+ *   - `doGet` con `action=getComisiones` (roster para el login) y
+ *     `action=getAll` (toda la base, usado por dataService.init() al cargar
+ *     el sitio) están listos para desplegar.
+ *   - Los `doPost` (uno por cada método de js/data-service.js, más `login`
+ *     para autenticación) están escritos y con el mismo contrato que su
+ *     contraparte del lado del sitio, pero no probados en un despliegue
+ *     real — antes de confiar en ellos con datos reales, lee los riesgos en
+ *     README.md (CORS, sin transacciones reales, la URL pública + el token
+ *     compartido no son seguridad de verdad, y las contraseñas de Usuarios
+ *     se guardan en texto plano).
  *
  * No fue desplegado ni probado por Claude — no hay acceso a la cuenta de
  * Google del usuario. Cada función se escribió leyendo exactamente qué
@@ -65,10 +66,90 @@ function doGet(e){
   try{
     var action = e.parameter.action;
     if(action === 'getComisiones') return respond_({ ok:true, data: getComisiones_() });
+    if(action === 'getAll') return respond_({ ok:true, data: getAll_() });
     return errorResponse_('action desconocida: ' + action);
   }catch(err){
     return errorResponse_(err);
   }
+}
+
+// ---------- getAll — toda la base en una sola llamada, para dataService.init() ----------
+//
+// Lee las 6 pestañas y las devuelve con la misma forma que espera el sitio
+// (mismos nombres de campo que state.js), desaplanando lo que en la Sheet
+// vive como texto: oradores/respuestas/comentarios/puntosDim (JSON string
+// -> array/objeto), activo/cerrada/requiereRevision (TRUE/FALSE de Sheets
+// -> boolean real), y decisionEstado/decisionComentario/decisionFecha
+// (3 columnas planas -> el objeto decisionSga anidado que usa el sitio).
+// com.roles queda vacío a propósito: el cliente ya sabe derivarlo de
+// miembros (rederivarRoles() en state.js) y así no se calcula dos veces.
+
+function sheetToObjects_(name){
+  var sh = sheet_(name);
+  var rows = sh.getDataRange().getValues();
+  if(rows.length < 2) return [];
+  var header = rows[0];
+  var out = [];
+  for(var i=1;i<rows.length;i++){
+    var row = rows[i];
+    var vacia = row.every(function(v){ return v === '' || v === null; });
+    if(vacia) continue;
+    var obj = {};
+    for(var c=0;c<header.length;c++) obj[header[c]] = row[c];
+    out.push(obj);
+  }
+  return out;
+}
+
+function bool_(v){ return v === true || v === 'TRUE' || v === 'true'; }
+function str_(v){ return (v === '' || v === null || typeof v === 'undefined') ? '' : String(v); }
+function parseJSON_(v, fallback){
+  if(!v) return fallback;
+  try{ return JSON.parse(v); }catch(e){ return fallback; }
+}
+
+function getAll_(){
+  var miembros = sheetToObjects_('Miembros').map(function(m){
+    return {
+      id: str_(m.id), comisionId: str_(m.comisionId), rolKey: str_(m.rolKey), nombre: str_(m.nombre),
+      activo: bool_(m.activo), desde: str_(m.desde), hasta: str_(m.hasta), continuidad: str_(m.continuidad)
+    };
+  });
+  var talleres = sheetToObjects_('Talleres').map(function(t){
+    return {
+      id: str_(t.id), comisionId: str_(t.comisionId), nombre: str_(t.nombre), tipo: str_(t.tipo) || 'taller',
+      fecha: str_(t.fecha), oradores: parseJSON_(t.oradores, []), cerrada: bool_(t.cerrada)
+    };
+  });
+  var evaluaciones = sheetToObjects_('Evaluaciones').map(function(ev){
+    return {
+      id: str_(ev.id), comisionId: str_(ev.comisionId), tallerId: str_(ev.tallerId), miembroId: str_(ev.miembroId),
+      rol: str_(ev.rol), nombreMiembro: str_(ev.nombreMiembro),
+      respuestas: parseJSON_(ev.respuestas, {}), comentarios: parseJSON_(ev.comentarios, {}), puntosDim: parseJSON_(ev.puntosDim, {}),
+      puntajeA: Number(ev.puntajeA) || 0, puntajeTotal: Number(ev.puntajeTotal) || 0, actualizado: str_(ev.actualizado)
+    };
+  });
+  var cortes = sheetToObjects_('Cortes').map(function(c){
+    return {
+      id: str_(c.id), comisionId: str_(c.comisionId), miembroId: str_(c.miembroId), rolKey: str_(c.rolKey), corteKey: str_(c.corteKey),
+      comentario: str_(c.comentario), semaforoAlMomento: str_(c.semaforoAlMomento),
+      promedioAlMomento: c.promedioAlMomento === '' || c.promedioAlMomento === null ? null : Number(c.promedioAlMomento),
+      requiereRevision: bool_(c.requiereRevision), fecha: str_(c.fecha),
+      decisionSga: { estado: str_(c.decisionEstado) || 'pendiente', comentario: str_(c.decisionComentario), fecha: str_(c.decisionFecha) }
+    };
+  });
+  var configCortes = {};
+  sheetToObjects_('ConfigCortes').forEach(function(row){
+    configCortes[str_(row.key)] = { inicio: str_(row.inicio) };
+  });
+  return {
+    comisiones: getComisiones_(),
+    miembros: miembros,
+    talleres: talleres,
+    evaluaciones: evaluaciones,
+    cortes: cortes,
+    configCortes: configCortes
+  };
 }
 
 // Pestaña "Comisiones": columnas id | nombre | sigla (fila 1 = encabezados).
@@ -122,6 +203,7 @@ function doPost(e){
       case 'guardarCorte':      return respond_({ ok:true, data: guardarCorte_(body) });
       case 'decidirCorte':      return respond_({ ok:true, data: decidirCorte_(body) });
       case 'saveConfigCorte':   return respond_({ ok:true, data: saveConfigCorte_(body) });
+      case 'login':             return respond_({ ok:true, data: login_(body) });
       default: return errorResponse_('action desconocida: ' + body.action);
     }
   }catch(err){
@@ -160,8 +242,13 @@ function miembroActivo_(comisionId, rolKey){
   return null;
 }
 
-function pushMiembro_(sh, comisionId, rolKey, nombre){
-  var id = 'mb_' + Utilities.getUuid();
+// id: el cliente ya lo generó (uid('mb') en data-service.js) y lo manda en
+// el body — se usa tal cual en vez de generar uno nuevo acá, para que el
+// registro que ya quedó en el `state` en memoria del cliente y la fila de
+// la Sheet sean el mismo id. Solo se genera uno propio si por lo que sea
+// no llegó (llamada directa a la API sin pasar por el cliente).
+function pushMiembro_(sh, comisionId, rolKey, nombre, id){
+  id = id || ('mb_' + Utilities.getUuid());
   var now = new Date().toISOString();
   sh.appendRow([id, comisionId, rolKey, nombre, true, now, '', '']);
   return { id: id, comisionId: comisionId, rolKey: rolKey, nombre: nombre, activo:true, desde: now, hasta:'', continuidad:'' };
@@ -177,13 +264,15 @@ function sustituirMiembro_(body){
   var sh = sheet_('Miembros');
   var actual = miembroActivo_(body.comisionId, body.rolKey);
   if(actual) desactivarMiembro_(sh, actual.rowNum, actual.header);
-  return pushMiembro_(sh, body.comisionId, body.rolKey, body.nombre);
+  return pushMiembro_(sh, body.comisionId, body.rolKey, body.nombre, body.id);
 }
 
-// body.cambios = [{ rolKey, nuevoNombre, miembroId }] — a diferencia de
+// body.cambios = [{ rolKey, nuevoNombre, miembroId, id }] — a diferencia de
 // data-service.js (que recibe el objeto miembro completo), acá el cliente
 // manda el id: la Sheet es la fuente de verdad, no conviene confiar en un
-// objeto miembro que el cliente pudo haber cacheado desactualizado.
+// objeto miembro que el cliente pudo haber cacheado desactualizado. `id` es
+// el id ya asignado localmente cuando el cambio es un alta nueva (ver
+// pushMiembro_) — sin miembroId todavía porque el cargo estaba vacante.
 function guardarMesa_(body){
   var sh = sheet_('Miembros');
   body.cambios.forEach(function(c){
@@ -196,7 +285,7 @@ function guardarMesa_(body){
         if(row2) sh.getRange(row2.rowNum, row2.header.indexOf('nombre')+1).setValue(c.nuevoNombre);
       }
     }else if(c.nuevoNombre){
-      pushMiembro_(sh, body.comisionId, c.rolKey, c.nuevoNombre);
+      pushMiembro_(sh, body.comisionId, c.rolKey, c.nuevoNombre, c.id);
     }
   });
   return { ok:true };
@@ -352,4 +441,28 @@ function saveConfigCorte_(body){
   if(!row) throw new Error('Fase de corte no encontrada: ' + body.corteKey);
   sh.getRange(row.rowNum, row.header.indexOf('inicio')+1).setValue(body.inicio);
   return { key: body.corteKey, inicio: body.inicio };
+}
+
+// ---- Usuarios: usuario | contrasena | rol | comisionId ----
+// Cuenta individual por persona (no una clave compartida por rol). `rol` es
+// 'eyc' | 'subse' | 'sg'; comisionId solo importa para 'eyc' (a qué
+// comisión entra esa cuenta) y se ignora para subse/sg.
+//
+// ADVERTENCIA: la contraseña se guarda y compara en texto plano — es el
+// mismo nivel de "seguridad" que ya tiene el TOKEN compartido (ver riesgo
+// #4 en README.md), no algo apto para contraseñas que la gente reutilice
+// en otros lados. Bien para gatear el acceso a esta herramienta interna
+// durante el evento; no para datos que de verdad necesiten protegerse.
+function login_(body){
+  var sh = sheet_('Usuarios');
+  var rows = sh.getDataRange().getValues();
+  var h = rows[0];
+  var iUser = h.indexOf('usuario'), iPass = h.indexOf('contrasena'), iRol = h.indexOf('rol'), iCom = h.indexOf('comisionId');
+  for(var i=1;i<rows.length;i++){
+    if(String(rows[i][iUser]) === String(body.usuario) && String(rows[i][iPass]) === String(body.contrasena)){
+      var rol = String(rows[i][iRol]);
+      return { rol: rol, comisionId: rol === 'eyc' ? String(rows[i][iCom] || '') : null };
+    }
+  }
+  throw new Error('Usuario o contraseña incorrectos.');
 }

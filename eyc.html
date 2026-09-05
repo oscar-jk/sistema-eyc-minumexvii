@@ -109,34 +109,49 @@
 
 <header class="topbar">
   <div class="topbar-inner">
-        <div class="brand">
-      <img class="brand-logo brand-logo-light" src="assets/img/header-logo-light.png" width="616" height="173" alt="MINUME de Estrellas">
-      <img class="brand-logo brand-logo-dark" src="assets/img/header-logo-dark.png" width="616" height="173" alt="MINUME de Estrellas">
+    <div class="brand">
+      <img class="brand-logo brand-logo-light" src="assets/img/login-lockup-light.png" width="751" height="85" alt="MINUME XVII Período de Sesiones">
+      <img class="brand-logo brand-logo-dark" src="assets/img/login-lockup-dark.png" width="751" height="85" alt="MINUME XVII Período de Sesiones">
       <p class="brand-caption">Sistema de Evaluación y Control</p>
     </div>
-    <div class="header-right">
-      <button type="button" class="hamburger-btn" id="nav-toggle" aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="nav-tabs">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
-      </button>
-      <p class="header-counter" id="header-counter">0 evaluaciones registradas</p>
-      <div class="session-badge" id="session-badge">
-        <span><span class="session-badge-role" id="session-badge-role"></span><span id="session-badge-detail"></span></span>
-        <button type="button" class="session-logout-btn" id="btn-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 16l4-4-4-4M20 12H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-      <button type="button" class="help-btn" id="help-btn" aria-label="Cómo funciona este panel" title="Cómo funciona este panel">?</button>
-      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro/oscuro">
-        <svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 12H2.1M21.9 12h-2.4M6.3 6.3 4.6 4.6M19.4 19.4l-1.7-1.7M17.7 6.3l1.7-1.7M4.6 19.4l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      </button>
-    </div>
+    <button type="button" class="hamburger-btn" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="side-drawer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg>
+    </button>
   </div>
+</header>
+
+<div class="drawer-backdrop" id="drawer-backdrop"></div>
+<aside class="side-drawer" id="side-drawer" aria-hidden="true" aria-label="Menú">
+  <button type="button" class="drawer-close-btn" id="drawer-close" aria-label="Cerrar menú">&times;</button>
+  <div class="side-drawer-head">
+    <p class="side-drawer-session"><span class="session-badge-role" id="session-badge-role"></span><span id="session-badge-detail"></span></p>
+  </div>
+  <p class="header-counter" id="header-counter">0 evaluaciones registradas</p>
+
   <nav class="nav-tabs" role="tablist" aria-label="Secciones" id="nav-tabs">
     <button class="nav-tab is-active" role="tab" id="tab-comisiones" data-view="comisiones" aria-selected="true" aria-controls="view-comisiones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 18v-7"></path><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"></path><path d="M14 18v-7"></path><path d="M18 18v-7"></path><path d="M3 22h18"></path><path d="M6 18v-7"></path></svg>Comisiones</button>
     <button class="nav-tab" role="tab" id="tab-progreso" data-view="progreso" aria-selected="false" aria-controls="view-progreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"></path><path d="M16 7h6v6"></path></svg>Progreso</button>
   </nav>
-</header>
+
+  <div class="side-drawer-divider"></div>
+
+  <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro/oscuro">
+    <svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 12H2.1M21.9 12h-2.4M6.3 6.3 4.6 4.6M19.4 19.4l-1.7-1.7M17.7 6.3l1.7-1.7M4.6 19.4l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    <span>Tema claro / oscuro</span>
+  </button>
+  <button type="button" class="help-btn" id="help-btn" aria-label="Cómo funciona este panel">
+    <span class="help-btn-mark" aria-hidden="true">?</span>
+    <span>Cómo funciona este panel</span>
+  </button>
+
+  <div class="side-drawer-spacer"></div>
+
+  <button type="button" class="side-drawer-logout" id="btn-logout">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 16l4-4-4-4M20 12H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Cerrar sesión
+  </button>
+</aside>
 
 <main class="container" id="main">
 
@@ -146,9 +161,8 @@
         <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-2"></use></svg>Comisiones</h1>
         <p class="view-desc" id="comisiones-desc">Elige una comisión para entrar: ahí configuras su mesa directiva, sus actividades y las evaluaciones.</p>
       </div>
-      <button type="button" class="btn btn-secondary view-back-btn" data-action="volver">
+      <button type="button" class="icon-back-btn view-back-btn" data-action="volver" aria-label="Volver" title="Volver">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
-        Volver
       </button>
     </div>
     <div id="comisiones-content"></div>
@@ -160,9 +174,8 @@
         <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-3"></use></svg>Progreso</h1>
         <p class="view-desc">Estado de las evaluaciones por comisión y actividad. Toca una estrella para entrar directo a completar una pendiente.</p>
       </div>
-      <button type="button" class="btn btn-secondary view-back-btn" data-action="volver">
+      <button type="button" class="icon-back-btn view-back-btn" data-action="volver" aria-label="Volver" title="Volver">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
-        Volver
       </button>
     </div>
     <div id="progreso-content"></div>
@@ -176,7 +189,7 @@
     <img class="footer-logo footer-logo-dark" src="assets/img/footer-logo-dark.png" width="396" height="170" alt="MINUME de Estrellas">
   </div>
   <span class="footer-divider" aria-hidden="true"></span>
-  <p>Los datos se guardan solo en este navegador (localStorage). No se envían a ningún servidor.</p>
+  <p id="footer-privacy-note">Los datos se guardan solo en este navegador (localStorage). No se envían a ningún servidor.</p>
   </div>
 </footer>
 
@@ -235,6 +248,7 @@
 <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
 <script src="js/constants.js"></script>
 <script src="js/state.js"></script>
+<script src="js/config.js"></script>
 <script src="js/data-service.js"></script>
 <script src="js/helpers.js"></script>
 <script src="js/render-shared.js"></script>

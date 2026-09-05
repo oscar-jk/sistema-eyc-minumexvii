@@ -129,10 +129,24 @@
   }
 
   function updateHeaderCounter(){
+    // No vive en index.html (login) — ver la nota de on_() en main.js.
+    var el = document.getElementById('header-counter');
+    if(!el) return;
     var nTaller = state.evaluaciones.filter(function(e){ return typeof e.puntajeTotal === 'number'; }).length;
     var nCorte = state.cortes.length;
     var n = nTaller + nCorte;
-    document.getElementById('header-counter').textContent = n === 1 ? '1 evaluación registrada' : (n + ' evaluaciones registradas');
+    el.textContent = n === 1 ? '1 evaluación registrada' : (n + ' evaluaciones registradas');
+  }
+
+  // El aviso de privacidad del footer deja de ser cierto en cuanto
+  // CONFIG.APPS_SCRIPT_URL tiene valor: los datos ya no viven solo en este
+  // navegador, viven en la Google Sheet (ver apps-script/).
+  function updateFooterPrivacyNote(){
+    var el = document.getElementById('footer-privacy-note');
+    if(!el) return;
+    if(typeof CONFIG !== 'undefined' && CONFIG.APPS_SCRIPT_URL){
+      el.textContent = 'Los datos se guardan en la base de datos del evento (Google Sheets), no solo en este navegador.';
+    }
   }
 
   /* ---------- Puntaje y semáforo ----------
@@ -212,7 +226,11 @@
   // usuario NUNCA eligió explícitamente, seguir reflejando cambios de tema
   // del sistema operativo en vivo mientras la página sigue abierta.
   function initTheme(){
-    document.getElementById('theme-toggle').addEventListener('click', function(){
+    // En index.html (login) ya no hay botón de tema visible — ver la nota
+    // de on_() en main.js. El tema ahí sigue resolviéndose solo (preferencia
+    // guardada o del sistema operativo, ver el script inline en <head>).
+    var toggle = document.getElementById('theme-toggle');
+    if(toggle) toggle.addEventListener('click', function(){
       var next = isDarkActive() ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       try{ localStorage.setItem(THEME_KEY, next); }catch(e){}

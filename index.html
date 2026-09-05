@@ -109,17 +109,10 @@
 
 <header class="topbar">
   <div class="topbar-inner">
-        <div class="brand">
-      <img class="brand-logo brand-logo-light" src="assets/img/header-logo-light.png" width="616" height="173" alt="MINUME de Estrellas">
-      <img class="brand-logo brand-logo-dark" src="assets/img/header-logo-dark.png" width="616" height="173" alt="MINUME de Estrellas">
+    <div class="brand">
+      <img class="brand-logo brand-logo-light" src="assets/img/login-lockup-light.png" width="751" height="85" alt="MINUME XVII Período de Sesiones">
+      <img class="brand-logo brand-logo-dark" src="assets/img/login-lockup-dark.png" width="751" height="85" alt="MINUME XVII Período de Sesiones">
       <p class="brand-caption">Sistema de Evaluación y Control</p>
-    </div>
-    <div class="header-right">
-      <p class="header-counter" id="header-counter">0 evaluaciones registradas</p>
-      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema claro/oscuro">
-        <svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 12H2.1M21.9 12h-2.4M6.3 6.3 4.6 4.6M19.4 19.4l-1.7-1.7M17.7 6.3l1.7-1.7M4.6 19.4l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      </button>
     </div>
   </div>
 </header>
@@ -129,44 +122,27 @@
   <section id="view-login" class="view is-active" role="tabpanel">
     <div class="login-shell">
       <div class="login-intro">
-        <img class="login-lockup login-lockup-light" src="assets/img/login-lockup-light.png" width="751" height="85" alt="MINUME XVII Período de Sesiones">
-        <img class="login-lockup login-lockup-dark" src="assets/img/login-lockup-dark.png" width="751" height="85" alt="MINUME XVII Período de Sesiones">
-        <p class="login-eyebrow">Acceso — versión de prueba</p>
+        <img class="login-lockup login-lockup-light" src="assets/img/header-logo-light.png" width="616" height="173" alt="MINUME de Estrellas">
+        <img class="login-lockup login-lockup-dark" src="assets/img/header-logo-dark.png" width="616" height="173" alt="MINUME de Estrellas">
+        <p class="login-eyebrow">Acceso</p>
         <h1 class="login-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-1"></use></svg>¿Quién eres?</h1>
-        <p class="login-desc">Elige tu acceso para continuar. Este login es simulado: no pide contraseña.</p>
+        <p class="login-desc">Ingresa con tu usuario y contraseña. Tu cuenta ya sabe a qué rol y comisión perteneces.</p>
       </div>
 
-      <div class="access-grid">
-        <div class="access-card">
-          <span class="access-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
-          </span>
-          <h2 class="access-title">Evaluación y Control</h2>
-          <p class="access-desc">Evalúa las actividades de tu comisión y configura su mesa directiva.</p>
-          <label class="select-field access-select-field">Tu comisión<div class="select-wrap"><select id="login-comision-select">
-            <option value="">Selecciona tu comisión…</option>
-          </select></div></label>
-          <button type="button" class="access-cta" id="btn-login-eyc" disabled>Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
-        </div>
-
-        <div class="access-card">
-          <span class="access-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18v-7"></path><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"></path><path d="M14 18v-7"></path><path d="M18 18v-7"></path><path d="M3 22h18"></path><path d="M6 18v-7"></path></svg>
-          </span>
-          <h2 class="access-title">Subsecretario/a</h2>
-          <p class="access-desc">Monitorea el semáforo de cada voluntario y registra los cortes de seguimiento.</p>
-          <button type="button" class="access-cta" data-login-role="subse">Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
-        </div>
-
-        <div class="access-card">
-          <span class="access-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
-          </span>
-          <h2 class="access-title">Secretario/a General</h2>
-          <p class="access-desc">Decide la continuidad de los casos que llegan de Subsecretaría y ve el panel general de todas las comisiones.</p>
-          <button type="button" class="access-cta" data-login-role="sg">Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
-        </div>
-      </div>
+      <form class="access-card login-form" id="login-form" novalidate>
+        <label class="role-field">
+          <span class="role-label">Usuario</span>
+          <input type="text" class="field-input" id="login-usuario" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+        </label>
+        <label class="role-field">
+          <span class="role-label">Contraseña</span>
+          <input type="password" class="field-input" id="login-contrasena" autocomplete="current-password" required>
+        </label>
+        <p class="login-form-error" id="login-form-error" role="alert" hidden></p>
+        <button type="submit" class="btn btn-primary login-form-submit" id="login-form-submit">
+          Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+        </button>
+      </form>
     </div>
   </section>
 </main>
@@ -178,7 +154,7 @@
     <img class="footer-logo footer-logo-dark" src="assets/img/footer-logo-dark.png" width="396" height="170" alt="MINUME de Estrellas">
   </div>
   <span class="footer-divider" aria-hidden="true"></span>
-  <p>Los datos se guardan solo en este navegador (localStorage). No se envían a ningún servidor.</p>
+  <p id="footer-privacy-note">Los datos se guardan solo en este navegador (localStorage). No se envían a ningún servidor.</p>
   </div>
 </footer>
 
@@ -187,6 +163,7 @@
 <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
 <script src="js/constants.js"></script>
 <script src="js/state.js"></script>
+<script src="js/config.js"></script>
 <script src="js/data-service.js"></script>
 <script src="js/helpers.js"></script>
 <script src="js/render-shared.js"></script>

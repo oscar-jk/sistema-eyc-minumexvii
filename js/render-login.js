@@ -1,13 +1,5 @@
 'use strict';
 
-  function populateLoginComisiones(){
-    var sel = document.getElementById('login-comision-select');
-    if(!sel) return;
-    sel.innerHTML = '<option value="">Selecciona tu comisión…</option>' + state.comisiones.map(function(c){
-      return '<option value="' + c.id + '">' + escapeHTML(c.sigla) + ' — ' + escapeHTML(c.nombre) + '</option>';
-    }).join('');
-  }
-
   // Cada rol vive en su propia página desde acá — login/eyc/subse/sga.html,
   // ver EXPECTED_ROLE (declarado inline en cada página de rol, antes de
   // estos <script src>) y el guard en init() (js/main.js). "Comisiones"
@@ -22,10 +14,13 @@
   }
 
   function doLogout(){
+    cerrarNavMovil_(); // el botón vive dentro del panel lateral, ver .side-drawer-logout
     confirmDiscardIfDirty(function(){
-      session = null;
-      try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
-      location.href = 'index.html';
+      showConfirmModal('Cerrar sesión', '¿Seguro que quieres cerrar sesión?', 'Cerrar sesión', function(){
+        session = null;
+        try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+        location.href = 'index.html';
+      });
     });
   }
 
@@ -52,24 +47,34 @@
     }
   }
 
-  // Se llama en las 4 páginas (ver init()) — cada bloque se null-guarda
-  // porque solo index.html tiene el formulario de login y solo las 3
-  // páginas de rol tienen el botón de logout.
-  function bindLoginEvents(){
-    var sel = document.getElementById('login-comision-select');
-    var btnEyc = document.getElementById('btn-login-eyc');
-    if(sel && btnEyc){
-      sel.addEventListener('change', function(e){ btnEyc.disabled = !e.target.value; });
-      btnEyc.addEventListener('click', function(){
-        if(!sel.value) return;
-        doLogin('eyc', sel.value);
-      });
-    }
-    var roleButtons = document.querySelectorAll('[data-login-role]');
-    for(var i=0;i<roleButtons.length;i++){
-      roleButtons[i].addEventListener('click', function(e){ doLogin(e.currentTarget.dataset.loginRole, null); });
-    }
+  // Login por usuario/contraseña contra la pestaña Usuarios de la Sheet
+  // (ver apps-script/Code.gs, login_) — la cuenta ya dice a qué rol (y, si
+  // es EyC, a qué comisión) entra; ya no se elige a mano. Sin
+  // CONFIG.APPS_SCRIPT_URL configurado no hay contra qué validar, ver el
+  // mensaje que devuelve dataService.login().
+  function bindLoginFormEvents(){
+    var form = document.getElementById('login-form');
+    if(!form) return; // solo existe en index.html
+    var usuarioInput = document.getElementById('login-usuario');
+    var contrasenaInput = document.getElementById('login-contrasena');
+    var errorEl = document.getElementById('login-form-error');
+    var submitBtn = document.getElementById('login-form-submit');
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      errorEl.hidden = true;
+      submitBtn.disabled = true;
+      dataService.login(usuarioInput.value.trim(), contrasenaInput.value)
+        .then(function(res){
+          doLogin(res.rol, res.comisionId);
+        })
+        .catch(function(err){
+          errorEl.textContent = err.message;
+          errorEl.hidden = false;
+          submitBtn.disabled = false;
+        });
+    });
+
     var logoutBtn = document.getElementById('btn-logout');
     if(logoutBtn) logoutBtn.addEventListener('click', doLogout);
   }
-

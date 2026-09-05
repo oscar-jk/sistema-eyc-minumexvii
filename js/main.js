@@ -63,23 +63,45 @@
     else location.href = 'index.html';
   }
 
-  // El menú hamburguesa (solo aparece en móvil, ver el media query de
-  // .hamburger-btn) es la misma <nav id="nav-tabs"> de siempre — nav-toggle
-  // solo le agrega/quita .is-open. cerrarNavMovil_() se llama también al
-  // elegir una pestaña, para no dejar el menú abierto tapando el contenido
-  // después de navegar.
+  // El botón de menú abre/cierra el panel lateral (.side-drawer) donde viven
+  // las pestañas, tema, ayuda y sesión — ver el HTML de eyc/subse/sga.html.
+  // cerrarNavMovil_() se llama también al elegir una pestaña, para no dejar
+  // el panel abierto tapando el contenido después de navegar.
   function cerrarNavMovil_(){
-    var nav = document.getElementById('nav-tabs');
+    var drawer = document.getElementById('side-drawer');
+    var backdrop = document.getElementById('drawer-backdrop');
     var toggle = document.getElementById('nav-toggle');
-    if(nav) nav.classList.remove('is-open');
+    if(!drawer) return; // no existe en index.html (login), donde no hay panel
+    drawer.classList.remove('is-open');
+    drawer.setAttribute('aria-hidden', 'true');
+    if(backdrop) backdrop.classList.remove('is-open');
     if(toggle) toggle.setAttribute('aria-expanded', 'false');
+    document.documentElement.classList.remove('drawer-open');
+  }
+  function abrirDrawer_(){
+    var drawer = document.getElementById('side-drawer');
+    var backdrop = document.getElementById('drawer-backdrop');
+    var toggle = document.getElementById('nav-toggle');
+    if(!drawer) return;
+    drawer.classList.add('is-open');
+    drawer.setAttribute('aria-hidden', 'false');
+    if(backdrop) backdrop.classList.add('is-open');
+    if(toggle) toggle.setAttribute('aria-expanded', 'true');
+    document.documentElement.classList.add('drawer-open');
+    var closeBtn = document.getElementById('drawer-close');
+    if(closeBtn) closeBtn.focus();
   }
 
   function bindGlobalEvents(){
     on_('nav-toggle', 'click', function(){
-      var nav = document.getElementById('nav-tabs');
-      var isOpen = nav.classList.toggle('is-open');
-      document.getElementById('nav-toggle').setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      var drawer = document.getElementById('side-drawer');
+      if(drawer.classList.contains('is-open')){ cerrarNavMovil_(); document.getElementById('nav-toggle').focus(); }
+      else abrirDrawer_();
+    });
+    on_('drawer-close', 'click', cerrarNavMovil_);
+    on_('drawer-backdrop', 'click', cerrarNavMovil_);
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape') cerrarNavMovil_();
     });
     var tabs = document.querySelectorAll('.nav-tab');
     for(var i=0;i<tabs.length;i++){
@@ -93,6 +115,7 @@
     on_('btn-cortes-config', 'click', abrirCortesConfigModal);
     on_('cortes-config-modal-close', 'click', cerrarCortesConfigModal);
     on_('help-btn', 'click', function(){
+      cerrarNavMovil_();
       if(session) abrirOnboardingModal(session.role);
     });
     on_('onboarding-modal-close', 'click', cerrarOnboardingModal);
@@ -166,8 +189,8 @@
     }
     initTheme();
     updateHeaderCounter();
-    populateLoginComisiones();
-    bindLoginEvents();
+    updateFooterPrivacyNote();
+    bindLoginFormEvents();
     bindGlobalEvents();
     loadParticles();
     window.addEventListener('beforeunload', function(e){
