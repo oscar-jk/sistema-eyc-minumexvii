@@ -27,6 +27,19 @@
  * (nombres de campos, qué se actualiza) coincida.
  */
 
+// Agrega un menú "Sistema EyC" a la Hoja (aparece después de recargarla)
+// con un ítem que corre setup(). Correrlo desde ACÁ en vez del botón ▶ del
+// editor de Apps Script suele destrabar el diálogo de autorización cuando
+// éste queda pegado en "Este proyecto necesita acceder a tu cuenta de
+// Google..." una y otra vez — al ser una acción real de la interfaz de la
+// Hoja (no del editor de scripts), Google la trata distinto.
+function onOpen(){
+  SpreadsheetApp.getUi()
+    .createMenu('Sistema EyC')
+    .addItem('Configurar todo (setup)', 'setup')
+    .addToUi();
+}
+
 // ---------- setup — crea/ordena todo de un solo click ----------
 //
 // Seguro de volver a correr: revisa cada pestaña/fila antes de escribir,
