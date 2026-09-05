@@ -40,6 +40,24 @@ function onOpen(){
     .addToUi();
 }
 
+// Alternativa a setup() para cuando el script NO está ligado a ninguna
+// Hoja (se creó directo en script.google.com, "Proyecto sin título", en
+// vez de vía Extensiones > Apps Script desde adentro de una Sheet): crea
+// una Spreadsheet nueva de cero, guarda su id para que ss_() la encuentre
+// en cualquier llamada futura (doGet/doPost incluidos), y corre setup()
+// sobre ella. Correr UNA SOLA VEZ — si se vuelve a correr, crea OTRA Hoja
+// nueva en vez de reusar la anterior (a diferencia de setup(), que sí es
+// seguro repetir).
+function crearHojaYConfigurar(){
+  var ss = SpreadsheetApp.create('Sistema EyC — Base de datos');
+  PropertiesService.getScriptProperties().setProperty('SHEET_ID', ss.getId());
+  var resultadoSetup = setup();
+  var mensaje = 'Hoja creada: ' + ss.getUrl() + '\n\n' + resultadoSetup;
+  Logger.log(mensaje);
+  try{ SpreadsheetApp.getUi().alert(mensaje); }catch(e){}
+  return mensaje;
+}
+
 // ---------- setup — crea/ordena todo de un solo click ----------
 //
 // Seguro de volver a correr: revisa cada pestaña/fila antes de escribir,
@@ -137,11 +155,17 @@ var COMISIONES_SEED_ = [
 
 // ---------- Configuración ----------
 
-// El id de esta Sheet (Archivo > Ver detalles del archivo, o simplemente
-// SpreadsheetApp.getActiveSpreadsheet() si el script vive DENTRO de la
-// Sheet vía Extensiones > Apps Script — recomendado, evita openById).
+// Si el script vive DENTRO de una Sheet (Extensiones > Apps Script —
+// recomendado), getActiveSpreadsheet() ya la encuentra sola. Si en cambio
+// es un script independiente (creado directo en script.google.com, sin
+// abrirlo desde ninguna Hoja), no hay "hoja activa" — en ese caso se usa
+// el id guardado por crearHojaYConfigurar(), que crea la Hoja de cero.
 function ss_(){
-  return SpreadsheetApp.getActiveSpreadsheet();
+  var activa = SpreadsheetApp.getActiveSpreadsheet();
+  if(activa) return activa;
+  var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  if(!id) throw new Error('No hay ninguna Hoja activa ni una creada todavía. Corré crearHojaYConfigurar() si este es un script independiente, o pegá el código dentro de una Hoja (Extensiones > Apps Script) y corré setup().');
+  return SpreadsheetApp.openById(id);
 }
 
 function sheet_(name){

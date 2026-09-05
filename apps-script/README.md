@@ -35,48 +35,84 @@ En cuanto le pongan un valor a `APPS_SCRIPT_URL`:
 ## Cómo desplegar
 
 `Code.gs` trae una función `setup()` que arma toda la Sheet sola — no hace
-falta crear pestañas ni pegar datos a mano.
+falta crear pestañas ni pegar datos a mano. Hay dos formas de arrancar,
+según si ya tienes una Sheet o no; después del paso 1 de cada una, el
+resto (autorización, implementar, `js/config.js`) es igual para las dos.
 
-1. Crea una Google Sheet nueva (en blanco, el nombre no importa).
-2. **Extensiones → Apps Script**. Se abre un editor ya conectado a esa
-   Sheet — no hace falta buscar el ID a mano.
-3. Borra el `Code.gs` de ejemplo que trae por defecto y pega el contenido
-   completo del `Code.gs` de este directorio. Guarda (Ctrl/Cmd+S).
-4. Arriba del editor hay un desplegable de funciones (dice algo como
-   "doGet" por defecto) — selecciona **`setup`** y presiona **▶ Ejecutar**.
-5. Primera vez: Google va a pedir autorización ("Se requiere autorización" →
-   **Revisar permisos** → elige tu cuenta → **Avanzado** → **Ir a [nombre
-   del proyecto] (no seguro)** → **Permitir**). Son permisos sobre TU
-   propia Sheet, no de terceros — el aviso de "no seguro" es solo porque el
-   script no está publicado/verificado por Google, no porque haga algo raro.
-6. Cuando termina, aparece un cuadro con el resumen de lo que hizo (y si no
-   aparece el cuadro, **Ver → Registros de ejecución** muestra lo mismo).
-   `setup()`:
-   - Crea las 7 pestañas (`Comisiones`, `Miembros`, `Talleres`,
-     `Evaluaciones`, `Cortes`, `ConfigCortes`, `Usuarios`) con sus
-     encabezados.
-   - Siembra `Comisiones` con las 15 comisiones fijas (mismos datos que
-     `js/constants.js`).
-   - Siembra `ConfigCortes` con las 3 fases (`corte1`, `corte2`, `final`).
-   - Siembra `Usuarios` con 17 cuentas de arranque, todas con contraseña
-     `cambiame`: `sg` / `subse` (los roles globales) y una por comisión de
-     EyC, con el usuario igual al id de su comisión (`ctd`, `pnud`, `cop`,
-     etc.). **Cambien esa contraseña antes de repartir el acceso** — ver
-     la advertencia de seguridad más abajo. Se puede editar/agregar/borrar
-     filas de `Usuarios` directamente en la Sheet en cualquier momento.
-   - Genera un `TOKEN` al azar (si no había uno todavía) y lo muestra en el
-     resumen — cópialo, hace falta en el paso 9.
-   - Es seguro volver a correrla después (por ejemplo si se agrega una
-     pestaña nueva a mano sin querer y hay que recrearla): nunca borra ni
-     duplica datos que ya existan, solo completa lo que falte.
-7. **Implementar → Nueva implementación → tipo "Aplicación web"**.
+**Opción A — ligado a una Sheet que ya abriste (recomendado):**
+
+1. Crea una Google Sheet nueva (en blanco, el nombre no importa) o abre
+   una que ya tengas. **Extensiones → Apps Script** — se abre un editor ya
+   conectado a esa Sheet. Borra el `Code.gs` de ejemplo y pega el
+   contenido completo del `Code.gs` de este directorio. Guarda (Ctrl/Cmd+S).
+2. Vuelve a la pestaña de la Hoja de cálculo y **recárgala** (F5) — va a
+   aparecer un menú nuevo, **Sistema EyC**, en la barra de menús.
+3. **Sistema EyC → Configurar todo (setup)** (en vez del botón ▶ del
+   editor — hacerlo desde acá evita un error de autorización que el botón
+   del editor muestra en algunos navegadores). Seguí con el paso "Primera
+   vez" de abajo.
+
+**Opción B — el script crea la Sheet por su cuenta** (si preferís no crear
+la Sheet a mano, o si ya tenías un script sin ligar a ninguna — "Proyecto
+sin título" en script.google.com):
+
+1. En script.google.com, crea un proyecto nuevo y pega el `Code.gs` de
+   este directorio. Guarda.
+2. Desplegable de funciones (arriba del editor) → selecciona
+   **`crearHojaYConfigurar`** → **▶ Ejecutar**. Seguí con el paso "Primera
+   vez" de abajo. Esto crea una Spreadsheet nueva de cero, la deja
+   guardada para que el resto del script la use siempre (`doGet`/`doPost`
+   incluidos), y corre `setup()` sobre ella. Correr **una sola vez** — si
+   se repite, crea OTRA Sheet nueva en vez de reusar la anterior (a
+   diferencia de `setup()`, que sí es seguro repetir).
+3. El resumen (o **Ver → Registros de ejecución**) trae el link a la Sheet
+   recién creada.
+
+**Primera vez (autorización), para cualquiera de las dos opciones:**
+
+Google va a pedir autorización: **Revisar permisos** → elige tu cuenta →
+**Avanzado** → **Ir a [nombre del proyecto] (no seguro)** → **Permitir**.
+Son permisos sobre tu propia Sheet, no de terceros — el aviso de "no
+seguro" es solo porque el script no está publicado/verificado por Google
+en su tienda, no porque haga algo raro.
+
+Si el navegador se queda dando el mismo error de autorización una y otra
+vez sin importar qué opción uses, es casi siempre el navegador bloqueando
+algo de Google en el medio, no el código — probá en una ventana de
+incógnito con una sola cuenta de Google iniciada y sin extensiones, o
+revisá que Chrome no esté bloqueando cookies de terceros para
+`[*.]google.com` (Configuración → Privacidad y seguridad → Cookies de
+terceros).
+
+**Qué hace `setup()`** (lo corren, indirectamente, las dos opciones):
+
+- Crea las 7 pestañas (`Comisiones`, `Miembros`, `Talleres`,
+  `Evaluaciones`, `Cortes`, `ConfigCortes`, `Usuarios`) con sus
+  encabezados.
+- Siembra `Comisiones` con las 15 comisiones fijas (mismos datos que
+  `js/constants.js`) y `ConfigCortes` con las 3 fases (`corte1`,
+  `corte2`, `final`).
+- Siembra `Usuarios` con 17 cuentas de arranque, todas con contraseña
+  `cambiame`: `sg` / `subse` (los roles globales) y una por comisión de
+  EyC, con el usuario igual al id de su comisión (`ctd`, `pnud`, `cop`,
+  etc.). **Cambien esa contraseña antes de repartir el acceso** — ver la
+  advertencia de seguridad más abajo. Se puede editar/agregar/borrar
+  filas de `Usuarios` directamente en la Sheet en cualquier momento.
+- Genera un `TOKEN` al azar (si no había uno todavía) y lo muestra en el
+  resumen — cópialo, hace falta en el paso final de abajo.
+- Es seguro volver a correrla después (por ejemplo si falta una pestaña):
+  nunca borra ni duplica datos que ya existan, solo completa lo que falte.
+
+**Para terminar, en cualquiera de las dos opciones:**
+
+1. **Implementar → Nueva implementación → tipo "Aplicación web"**.
    - Ejecutar como: **Yo** (tu cuenta).
    - Quién tiene acceso: **Cualquier usuario** (necesario para que el sitio
      estático, sin login de Google, pueda llamarlo — ver riesgo #4).
-8. Copia la URL que te da (`https://script.google.com/macros/s/.../exec`).
-9. En `js/config.js`, pega esa URL en `APPS_SCRIPT_URL` y el TOKEN del
-   paso 6 en `TOKEN`. Guarda, sube el cambio, listo — el sitio ya
-   lee/escribe todo en la Sheet.
+2. Copia la URL que te da (`https://script.google.com/macros/s/.../exec`).
+3. En `js/config.js`, pega esa URL en `APPS_SCRIPT_URL` y el TOKEN del
+   resumen de `setup()` en `TOKEN`. Guarda, sube el cambio, listo — el
+   sitio ya lee/escribe todo en la Sheet.
 
 ## Riesgos a tener en cuenta
 
