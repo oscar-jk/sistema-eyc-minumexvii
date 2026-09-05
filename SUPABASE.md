@@ -39,15 +39,26 @@ Sheets). La función es `SECURITY DEFINER`, así puede leer
 `usuarios.contrasena_hash` aunque el rol público (`anon`) no tenga permiso
 directo sobre esa tabla — es la única puerta de entrada a `usuarios`.
 
-**Cuentas de arranque, todas con contraseña `cambiame`:**
+**Cuentas genéricas para probar ahora, todas con contraseña `1234`:**
 `sg`, `subse`, y una por comisión de EyC con el usuario igual al `id` de
-su comisión (`ctd`, `pnud`, `cop`, ...). **Cámbienlas antes de repartir el
-acceso real** — se editan directo en la tabla `usuarios` desde el panel de
-Supabase (Table Editor), o con SQL:
+su comisión (`ctd`, `pnud`, `cop`, ...) — lista completa más abajo.
+**Son para pruebas, no para el evento real** — antes de repartir acceso de
+verdad, cambien la contraseña de cada cuenta (y consideren dar una cuenta
+individual por persona en vez de una compartida por comisión). Se editan
+directo en la tabla `usuarios` desde el panel de Supabase (Table Editor),
+o con SQL:
 ```sql
 update usuarios set contrasena_hash = crypt('la-nueva-contraseña', gen_salt('bf'))
 where usuario = 'ctd';
 ```
+
+Lista completa de usuarios (contraseña `1234` en todos):
+
+| Usuario | Rol |
+|---|---|
+| `sg` | Secretario/a General |
+| `subse` | Subsecretario/a |
+| `ctd`, `pnud`, `cop`, `ams`, `csnu`, `onudc`, `cij`, `foro-social-drdh`, `onudi`, `unctad`, `omt`, `cime`, `oma`, `crpd`, `unesco-juventud-deporte` | EyC (uno por comisión, el usuario es el id de su comisión) |
 
 ## Seguridad (RLS)
 
