@@ -34,83 +34,49 @@ En cuanto le pongan un valor a `APPS_SCRIPT_URL`:
 
 ## Cómo desplegar
 
-1. Crea una Google Sheet nueva. Agrega estas 7 pestañas (el nombre debe
-   ser EXACTO, Apps Script lo busca por nombre) con la fila 1 de cada una
-   como encabezado:
+`Code.gs` trae una función `setup()` que arma toda la Sheet sola — no hace
+falta crear pestañas ni pegar datos a mano.
 
-   | Pestaña | Columnas (fila 1) |
-   |---|---|
-   | `Comisiones` | `id`, `nombre`, `sigla` |
-   | `Miembros` | `id`, `comisionId`, `rolKey`, `nombre`, `activo`, `desde`, `hasta`, `continuidad` |
-   | `Talleres` | `id`, `comisionId`, `nombre`, `tipo`, `fecha`, `oradores`, `cerrada` |
-   | `Evaluaciones` | `id`, `comisionId`, `tallerId`, `miembroId`, `rol`, `nombreMiembro`, `respuestas`, `comentarios`, `puntosDim`, `puntajeA`, `puntajeTotal`, `actualizado` |
-   | `Cortes` | `id`, `comisionId`, `miembroId`, `rolKey`, `corteKey`, `comentario`, `semaforoAlMomento`, `promedioAlMomento`, `requiereRevision`, `fecha`, `decisionEstado`, `decisionComentario`, `decisionFecha` |
-   | `ConfigCortes` | `key`, `inicio` — 3 filas fijas: `corte1`, `corte2`, `final` (dejen `inicio` vacío, se llena desde el sitio) |
-   | `Usuarios` | `usuario`, `contrasena`, `rol`, `comisionId` |
-
-   Todas menos `Comisiones` y `Usuarios` pueden quedar con solo el
-   encabezado — se llenan solas a medida que se usa el sitio.
-
-2. En `Comisiones`, pega estas 15 filas debajo del encabezado (mismos datos
-   que hoy están hardcodeados en `js/constants.js`, columna A=id, B=nombre,
-   C=sigla):
-
-   ```
-   ctd	Comisión de Ciencia y Tecnología para el Desarrollo	CTD
-   pnud	Programa de las Naciones Unidas para el Desarrollo	PNUD
-   cop	Conferencia de las Partes	COP
-   ams	Asamblea Mundial de la Salud	AMS
-   csnu	Consejo de Seguridad de las Naciones Unidas	CSNU
-   onudc	Oficina de las Naciones Unidas contra la Droga y el Delito	ONUDC
-   cij	Corte Internacional de Justicia	CIJ
-   foro-social-drdh	Foro Social del Consejo de Derechos Humanos	POR DEFINIR
-   onudi	Organización de las Naciones Unidas para el Desarrollo Industrial	ONUDI
-   unctad	Conferencia de las Naciones Unidas sobre Comercio y Desarrollo	UNCTAD
-   omt	Organización Mundial del Turismo	OMT
-   cime	Conferencia Iberoamericana de Ministros de Educación	CIME
-   oma	Organización Mundial de Aduanas	OMA
-   crpd	Comité sobre los Derechos de las Personas con Discapacidad	CRPD
-   unesco-juventud-deporte	UNESCO sobre Juventud y Deporte	POR DEFINIR
-   ```
-
-   (Selecciona la celda A2 y pega — al ser texto separado por tabs, Sheets
-   lo reparte solo en columnas A/B/C.)
-
-3. En `Usuarios`, agrega al menos una cuenta por rol para poder entrar la
-   primera vez — por ejemplo:
-
-   ```
-   sg1	cambiame	sg	
-   subse1	cambiame	subse	
-   ctd1	cambiame	eyc	ctd
-   ```
-
-   `comisionId` solo importa (y debe coincidir con un `id` de la pestaña
-   `Comisiones`) cuando `rol` es `eyc`; para `subse`/`sg` déjenlo vacío.
-   Cada persona con acceso EyC necesita su propia fila con el `comisionId`
-   de SU comisión. Cambien `cambiame` por contraseñas reales antes de
-   compartir el acceso — ver la advertencia de seguridad más abajo.
-
-4. En la Sheet: **Extensiones → Apps Script**. Se abre un editor ya
-   conectado a esa Sheet — no hace falta buscar el ID a mano.
-5. Borra el `Code.gs` de ejemplo que trae por defecto y pega el contenido
-   del `Code.gs` de este directorio.
-6. Define el token compartido: en el editor de Apps Script, pega esto en
-   cualquier parte del archivo, **ejecútalo una vez** (▶) con tu propio
-   valor, y bórralo del archivo después:
-   ```js
-   function setToken(){ PropertiesService.getScriptProperties().setProperty('TOKEN', 'tu-valor-secreto-aca'); }
-   ```
+1. Crea una Google Sheet nueva (en blanco, el nombre no importa).
+2. **Extensiones → Apps Script**. Se abre un editor ya conectado a esa
+   Sheet — no hace falta buscar el ID a mano.
+3. Borra el `Code.gs` de ejemplo que trae por defecto y pega el contenido
+   completo del `Code.gs` de este directorio. Guarda (Ctrl/Cmd+S).
+4. Arriba del editor hay un desplegable de funciones (dice algo como
+   "doGet" por defecto) — selecciona **`setup`** y presiona **▶ Ejecutar**.
+5. Primera vez: Google va a pedir autorización ("Se requiere autorización" →
+   **Revisar permisos** → elige tu cuenta → **Avanzado** → **Ir a [nombre
+   del proyecto] (no seguro)** → **Permitir**). Son permisos sobre TU
+   propia Sheet, no de terceros — el aviso de "no seguro" es solo porque el
+   script no está publicado/verificado por Google, no porque haga algo raro.
+6. Cuando termina, aparece un cuadro con el resumen de lo que hizo (y si no
+   aparece el cuadro, **Ver → Registros de ejecución** muestra lo mismo).
+   `setup()`:
+   - Crea las 7 pestañas (`Comisiones`, `Miembros`, `Talleres`,
+     `Evaluaciones`, `Cortes`, `ConfigCortes`, `Usuarios`) con sus
+     encabezados.
+   - Siembra `Comisiones` con las 15 comisiones fijas (mismos datos que
+     `js/constants.js`).
+   - Siembra `ConfigCortes` con las 3 fases (`corte1`, `corte2`, `final`).
+   - Siembra `Usuarios` con 17 cuentas de arranque, todas con contraseña
+     `cambiame`: `sg` / `subse` (los roles globales) y una por comisión de
+     EyC, con el usuario igual al id de su comisión (`ctd`, `pnud`, `cop`,
+     etc.). **Cambien esa contraseña antes de repartir el acceso** — ver
+     la advertencia de seguridad más abajo. Se puede editar/agregar/borrar
+     filas de `Usuarios` directamente en la Sheet en cualquier momento.
+   - Genera un `TOKEN` al azar (si no había uno todavía) y lo muestra en el
+     resumen — cópialo, hace falta en el paso 9.
+   - Es seguro volver a correrla después (por ejemplo si se agrega una
+     pestaña nueva a mano sin querer y hay que recrearla): nunca borra ni
+     duplica datos que ya existan, solo completa lo que falte.
 7. **Implementar → Nueva implementación → tipo "Aplicación web"**.
    - Ejecutar como: **Yo** (tu cuenta).
    - Quién tiene acceso: **Cualquier usuario** (necesario para que el sitio
      estático, sin login de Google, pueda llamarlo — ver riesgo #4).
-8. Google va a pedir autorización la primera vez (permisos sobre la
-   Sheet) — acéptalos, son tuyos, no de terceros.
-9. Copia la URL que te da (`https://script.google.com/macros/s/.../exec`).
-10. En `js/config.js`, pega esa URL en `APPS_SCRIPT_URL` y el mismo valor
-    del paso 6 en `TOKEN`. Guarda, sube el cambio, listo — el sitio ya
-    lee/escribe todo en la Sheet.
+8. Copia la URL que te da (`https://script.google.com/macros/s/.../exec`).
+9. En `js/config.js`, pega esa URL en `APPS_SCRIPT_URL` y el TOKEN del
+   paso 6 en `TOKEN`. Guarda, sube el cambio, listo — el sitio ya
+   lee/escribe todo en la Sheet.
 
 ## Riesgos a tener en cuenta
 
@@ -148,7 +114,20 @@ En cuanto le pongan un valor a `APPS_SCRIPT_URL`:
 
 ## Esquema de las pestañas
 
-Ver la tabla del paso 1 de arriba. Notas de formato:
+`setup()` las crea solas (ver arriba) — esta tabla es solo referencia de
+qué columna es cada cosa, por si hace falta mirar la Sheet a mano.
+
+| Pestaña | Columnas (fila 1) |
+|---|---|
+| `Comisiones` | `id`, `nombre`, `sigla` |
+| `Miembros` | `id`, `comisionId`, `rolKey`, `nombre`, `activo`, `desde`, `hasta`, `continuidad` |
+| `Talleres` | `id`, `comisionId`, `nombre`, `tipo`, `fecha`, `oradores`, `cerrada` |
+| `Evaluaciones` | `id`, `comisionId`, `tallerId`, `miembroId`, `rol`, `nombreMiembro`, `respuestas`, `comentarios`, `puntosDim`, `puntajeA`, `puntajeTotal`, `actualizado` |
+| `Cortes` | `id`, `comisionId`, `miembroId`, `rolKey`, `corteKey`, `comentario`, `semaforoAlMomento`, `promedioAlMomento`, `requiereRevision`, `fecha`, `decisionEstado`, `decisionComentario`, `decisionFecha` |
+| `ConfigCortes` | `key`, `inicio` — 3 filas fijas: `corte1`, `corte2`, `final` |
+| `Usuarios` | `usuario`, `contrasena`, `rol`, `comisionId` — `comisionId` solo se usa cuando `rol` es `eyc` |
+
+Notas de formato:
 
 - `oradores` (Talleres), `respuestas`/`comentarios`/`puntosDim`
   (Evaluaciones) son objetos/arrays del lado del sitio — en la Sheet viven

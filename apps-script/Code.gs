@@ -3,11 +3,16 @@
  * Es la base de datos completa: roster, mesa directiva, actividades,
  * evaluaciones, cortes Y las cuentas de acceso (login por usuario/contraseña).
  *
+ * PARA EMPEZAR: pega este archivo en una Sheet nueva (Extensiones > Apps
+ * Script) y ejecuta `setup()` UNA VEZ (desplegable de funciones, arriba del
+ * editor > selecciona "setup" > ▶). Crea las 7 pestañas con encabezados,
+ * las siembra con las 15 comisiones y unas cuentas de arranque, y genera el
+ * TOKEN — ver el paso a paso completo en README.md.
+ *
  * ESTADO DE ESTE ARCHIVO (léelo antes de tocar nada):
  *
- *   - `doGet` con `action=getComisiones` (roster para el login) y
- *     `action=getAll` (toda la base, usado por dataService.init() al cargar
- *     el sitio) están listos para desplegar.
+ *   - `setup()`, `doGet` con `action=getComisiones`/`action=getAll`, están
+ *     listos para desplegar.
  *   - Los `doPost` (uno por cada método de js/data-service.js, más `login`
  *     para autenticación) están escritos y con el mismo contrato que su
  *     contraparte del lado del sitio, pero no probados en un despliegue
@@ -21,6 +26,101 @@
  * hace su contraparte en js/data-service.js, para que el contrato
  * (nombres de campos, qué se actualiza) coincida.
  */
+
+// ---------- setup — crea/ordena todo de un solo click ----------
+//
+// Seguro de volver a correr: revisa cada pestaña/fila antes de escribir,
+// nunca borra ni duplica datos que ya existan. Así que también sirve para
+// "reparar" una Sheet a la que le falte una pestaña o el TOKEN.
+function setup(){
+  var resumen = [];
+
+  var comisionesSh = getOrCreateSheet_('Comisiones', ['id','nombre','sigla']);
+  var comisionesNuevas = seedIfEmpty_(comisionesSh, COMISIONES_SEED_.map(function(c){ return [c.id, c.nombre, c.sigla]; }));
+  resumen.push('Comisiones: ' + (comisionesNuevas ? COMISIONES_SEED_.length + ' filas cargadas.' : 'ya tenía datos, no se tocó.'));
+
+  getOrCreateSheet_('Miembros', ['id','comisionId','rolKey','nombre','activo','desde','hasta','continuidad']);
+  resumen.push('Miembros: pestaña lista (se llena sola desde el sitio).');
+
+  getOrCreateSheet_('Talleres', ['id','comisionId','nombre','tipo','fecha','oradores','cerrada']);
+  resumen.push('Talleres: pestaña lista (se llena sola desde el sitio).');
+
+  getOrCreateSheet_('Evaluaciones', ['id','comisionId','tallerId','miembroId','rol','nombreMiembro','respuestas','comentarios','puntosDim','puntajeA','puntajeTotal','actualizado']);
+  resumen.push('Evaluaciones: pestaña lista (se llena sola desde el sitio).');
+
+  getOrCreateSheet_('Cortes', ['id','comisionId','miembroId','rolKey','corteKey','comentario','semaforoAlMomento','promedioAlMomento','requiereRevision','fecha','decisionEstado','decisionComentario','decisionFecha']);
+  resumen.push('Cortes: pestaña lista (se llena sola desde el sitio).');
+
+  var configSh = getOrCreateSheet_('ConfigCortes', ['key','inicio']);
+  var configNuevo = seedIfEmpty_(configSh, [['corte1',''],['corte2',''],['final','']]);
+  resumen.push('ConfigCortes: ' + (configNuevo ? '3 filas cargadas.' : 'ya tenía datos, no se tocó.'));
+
+  // Una cuenta de arranque por rol global + una por cada comisión de EyC
+  // (usuario = el id de la comisión, ej. "ctd") — así no hay que dar de
+  // alta 15 cuentas de EyC a mano. Contraseña "cambiame" en todas: hay que
+  // reemplazarla antes de repartir el acceso de verdad (ver README).
+  var usuariosSh = getOrCreateSheet_('Usuarios', ['usuario','contrasena','rol','comisionId']);
+  var usuariosSeed = [['sg','cambiame','sg',''],['subse','cambiame','subse','']].concat(
+    COMISIONES_SEED_.map(function(c){ return [c.id, 'cambiame', 'eyc', c.id]; })
+  );
+  var usuariosNuevos = seedIfEmpty_(usuariosSh, usuariosSeed);
+  resumen.push('Usuarios: ' + (usuariosNuevos
+    ? (usuariosSeed.length + ' cuentas creadas, todas con contraseña "cambiame" — cámbialas antes de repartir el acceso.')
+    : 'ya tenía datos, no se tocó.'));
+
+  var props = PropertiesService.getScriptProperties();
+  var token = props.getProperty('TOKEN');
+  if(!token){
+    token = Utilities.getUuid();
+    props.setProperty('TOKEN', token);
+    resumen.push('TOKEN generado: ' + token + '  <-- cópialo en js/config.js (CONFIG.TOKEN).');
+  }else{
+    resumen.push('TOKEN: ya había uno guardado, no se tocó. (' + token + ')');
+  }
+
+  var mensaje = 'Setup del Sistema EyC\n\n' + resumen.join('\n');
+  Logger.log(mensaje);
+  try{ SpreadsheetApp.getUi().alert(mensaje); }catch(e){} // no siempre hay UI disponible (p.ej. corriendo desde un trigger) — no pasa nada si falla
+  return mensaje;
+}
+
+function getOrCreateSheet_(name, headers){
+  var sh = ss_().getSheetByName(name);
+  if(!sh) sh = ss_().insertSheet(name);
+  var fila1 = sh.getRange(1, 1, 1, headers.length).getValues()[0];
+  var yaTieneEncabezado = headers.every(function(h, i){ return fila1[i] === h; });
+  if(!yaTieneEncabezado) sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  return sh;
+}
+
+// Escribe `filas` a partir de la fila 2 SOLO si la pestaña no tiene ninguna
+// fila de datos todavía (para no duplicar si se vuelve a correr setup()).
+function seedIfEmpty_(sh, filas){
+  if(sh.getLastRow() > 1) return false; // ya hay algo más que el encabezado
+  sh.getRange(2, 1, filas.length, filas[0].length).setValues(filas);
+  return true;
+}
+
+// Las mismas 15 comisiones que hoy están hardcodeadas en js/constants.js
+// (FIXED_COMISIONES) — la única lista real, usada tanto para sembrar
+// Comisiones como para las cuentas de arranque de Usuarios.
+var COMISIONES_SEED_ = [
+  { id:'ctd', nombre:'Comisión de Ciencia y Tecnología para el Desarrollo', sigla:'CTD' },
+  { id:'pnud', nombre:'Programa de las Naciones Unidas para el Desarrollo', sigla:'PNUD' },
+  { id:'cop', nombre:'Conferencia de las Partes', sigla:'COP' },
+  { id:'ams', nombre:'Asamblea Mundial de la Salud', sigla:'AMS' },
+  { id:'csnu', nombre:'Consejo de Seguridad de las Naciones Unidas', sigla:'CSNU' },
+  { id:'onudc', nombre:'Oficina de las Naciones Unidas contra la Droga y el Delito', sigla:'ONUDC' },
+  { id:'cij', nombre:'Corte Internacional de Justicia', sigla:'CIJ' },
+  { id:'foro-social-drdh', nombre:'Foro Social del Consejo de Derechos Humanos', sigla:'POR DEFINIR' },
+  { id:'onudi', nombre:'Organización de las Naciones Unidas para el Desarrollo Industrial', sigla:'ONUDI' },
+  { id:'unctad', nombre:'Conferencia de las Naciones Unidas sobre Comercio y Desarrollo', sigla:'UNCTAD' },
+  { id:'omt', nombre:'Organización Mundial del Turismo', sigla:'OMT' },
+  { id:'cime', nombre:'Conferencia Iberoamericana de Ministros de Educación', sigla:'CIME' },
+  { id:'oma', nombre:'Organización Mundial de Aduanas', sigla:'OMA' },
+  { id:'crpd', nombre:'Comité sobre los Derechos de las Personas con Discapacidad', sigla:'CRPD' },
+  { id:'unesco-juventud-deporte', nombre:'UNESCO sobre Juventud y Deporte', sigla:'POR DEFINIR' }
+];
 
 // ---------- Configuración ----------
 
@@ -37,9 +137,10 @@ function sheet_(name){
   return sh;
 }
 
-// Token compartido — NO lo pongas literal acá. Ejecuta una vez, a mano,
-// desde el editor de Apps Script (Ejecutar > setToken), con tu propio
-// valor, y bórralo de este archivo después:
+// Token compartido — setup() ya genera uno al azar la primera vez que se
+// corre (ver más abajo) y lo deja en Propiedades del script. Si preferís
+// poner tu propio valor en vez del generado, corré esto una sola vez a
+// mano (desplegable de funciones > pega esta función > ▶) y borrala después:
 //   function setToken(){ PropertiesService.getScriptProperties().setProperty('TOKEN', 'tu-valor-secreto-aca'); }
 function checkToken_(e){
   var expected = PropertiesService.getScriptProperties().getProperty('TOKEN');
