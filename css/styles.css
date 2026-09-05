@@ -559,7 +559,7 @@
   .login-title{font-family:'Libre Baskerville',Georgia,serif;font-style:italic;font-weight:400;font-size:1.9rem;letter-spacing:-.01em;display:flex;align-items:center;gap:.55rem;}
   .login-desc{color:var(--text-secondary);font-size:.96rem;margin-top:.5rem;line-height:1.5;}
 
-  /* Formulario de acceso (usuario/contraseña, ver apps-script/Usuarios) —
+  /* Formulario de acceso (usuario/contraseña, ver SUPABASE.md) —
      una sola tarjeta en vez del selector de rol de antes: la cuenta ya
      sabe a qué rol/comisión entra. */
   .login-form{max-width:340px;gap:1rem;padding:1.5rem;}

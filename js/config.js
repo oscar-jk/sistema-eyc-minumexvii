@@ -1,18 +1,15 @@
 'use strict';
 
-  // Conexión al backend de Google Sheets (ver apps-script/).
-  // Vacío = modo local: la app sigue funcionando 100% con localStorage,
-  // como antes de que existiera este archivo (útil mientras la Sheet
-  // todavía no está desplegada, o para seguir probando sin tocar datos
-  // reales). En cuanto APPS_SCRIPT_URL tenga un valor, dataService pasa a
-  // leer/escribir todo en la Sheet — ver js/data-service.js.
+  // Conexión al backend de Supabase (ver SUPABASE.md). Vacío = modo local:
+  // la app sigue funcionando 100% con localStorage (útil para seguir
+  // probando sin tocar datos reales). Con estos dos valores puestos,
+  // dataService pasa a leer/escribir todo en Supabase — ver
+  // js/data-service.js.
   var CONFIG = {
-    // Pega acá la URL que te da Apps Script al implementar como aplicación
-    // web (termina en /exec). Ver apps-script/README.md, paso a paso.
-    APPS_SCRIPT_URL: '',
-    // El mismo valor que le pusiste a setToken() en el editor de Apps
-    // Script (Ejecutar > setToken, una sola vez, a mano). Viaja en este
-    // archivo tal como viene — no es un secreto real, ver el riesgo #4 en
-    // apps-script/README.md.
-    TOKEN: ''
+    SUPABASE_URL: 'https://hnlhhwululasvlckbcrq.supabase.co',
+    // Llave pública (anon/publishable) del proyecto — está pensada para
+    // viajar en el JS del cliente, no es un secreto (el acceso real de
+    // datos lo controlan las políticas de RLS y la función login() en la
+    // base, ver SUPABASE.md).
+    SUPABASE_ANON_KEY: 'sb_publishable_-3SmtEtO1brhGbThaJeICw_OPugVcG9'
   };

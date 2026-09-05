@@ -2,67 +2,76 @@
 
 /* ---------- Capa de acceso a datos ----------
    Fachada entre el resto de la app y la persistencia real. Dos modos, según
-   si CONFIG.APPS_SCRIPT_URL (js/config.js) tiene valor:
+   si CONFIG.SUPABASE_URL/SUPABASE_ANON_KEY (js/config.js) tienen valor:
 
-   - LOCAL (por defecto, URL vacía): todo vive en localStorage vía state.js,
-     igual que siempre. Así el sitio sigue funcionando mientras la Sheet
-     todavía no está desplegada.
-   - REMOTO (URL configurada): la Google Sheet es la fuente de verdad. Cada
-     mutador actualiza `state` en memoria de inmediato (la UI no espera a la
-     red) y ADEMÁS dispara el POST correspondiente al Apps Script en
-     segundo plano — si ese POST falla, se avisa con un toast de error en
-     vez de fallar en silencio, pero no se revierte el cambio local (ver
-     riesgo de "sin transacciones reales" en apps-script/README.md).
-     localStorage se seguiría llenando iabajo como respaldo (ver saveState
-     en state.js) para no perder nada si falla la red a mitad de un evento.
+   - LOCAL (URL/llave vacías): todo vive en localStorage vía state.js.
+   - REMOTO (con valores, el caso normal desde que existe SUPABASE.md):
+     Supabase (Postgres) es la fuente de verdad. Cada mutador actualiza
+     `state` en memoria de inmediato (la UI no espera a la red) y ADEMÁS
+     dispara la escritura correspondiente en Supabase en segundo plano —
+     si esa escritura falla, se avisa con un toast de error en vez de
+     fallar en silencio, pero no se revierte el cambio local (ver
+     SUPABASE.md, "sin transacciones reales"). localStorage se sigue
+     llenando igual como respaldo, por si falla la red a mitad de un corte
+     durante el evento.
 
    Los "getters" (state.talleres.filter(...), miembroActivo(...), etc.) NO
    pasan por acá — siguen leyendo `state` directo y síncrono, como siempre.
-   Solo init() y los métodos mutadores de abajo hablan con el backend. */
+   Solo init(), login() y los métodos mutadores de abajo hablan con el
+   backend.
+
+   Nombres de columna: Postgres usa snake_case (comision_id, rol_key...),
+   el resto del sitio usa camelCase (comisionId, rolKey...) — las funciones
+   mapXFromDb_ de acá abajo son la única frontera entre los dos mundos. */
 var dataService = (function(){
 
+  var supa = null;
   function isRemote_(){
-    return typeof CONFIG !== 'undefined' && !!CONFIG.APPS_SCRIPT_URL;
+    if(typeof CONFIG === 'undefined' || !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) return false;
+    if(!supa) supa = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    return true;
   }
 
-  // Copia superficial de `extra` sobre `base` — el equivalente ES5 de
-  // Object.assign, para mantener el mismo estilo (var/function) del resto
-  // del archivo.
-  function extend_(base, extra){
-    for(var k in extra){ if(extra.hasOwnProperty(k)) base[k] = extra[k]; }
-    return base;
-  }
-
-  // POST con Content-Type text/plain (no application/json: dispara un
-  // preflight OPTIONS que Apps Script Web Apps no responden, ver README) y
-  // el token compartido de CONFIG en el body — mismo contrato que
-  // checkToken_()/doPost() del lado del Apps Script.
-  function postToSheet_(action, payload){
-    var body = extend_({ action: action, token: CONFIG.TOKEN }, payload || {});
-    return fetch(CONFIG.APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body)
-    }).then(function(r){ return r.json(); }).then(function(json){
-      if(!json || !json.ok) throw new Error((json && json.error) || 'Error desconocido del backend');
-      return json.data;
-    });
-  }
-
-  // Dispara un POST "en segundo plano": la UI ya se actualizó de forma
-  // optimista con el cambio local, esto solo confirma que también llegó a
-  // la Sheet. Un fallo se avisa con un toast, no bloquea ni revierte nada.
-  function fireAndWarn_(action, payload){
+  // Dispara una escritura "en segundo plano": la UI ya se actualizó de
+  // forma optimista con el cambio local, esto solo confirma que también
+  // llegó a Supabase. Un fallo se avisa con un toast, no bloquea ni
+  // revierte nada. `accion` es solo para el mensaje de error.
+  function fireAndWarn_(accion, promise){
     if(!isRemote_()) return;
-    postToSheet_(action, payload).catch(function(err){
-      toast('No se pudo guardar "' + action + '" en la base de datos: ' + err.message, 'error');
+    promise.then(function(res){
+      if(res && res.error) throw res.error;
+    }).catch(function(err){
+      toast('No se pudo guardar "' + accion + '" en la base de datos: ' + (err.message || err), 'error');
     });
   }
 
-  // Reconstruye com.roles para todas las comisiones a partir de
-  // state.miembros — misma lógica que rederivarRoles() en state.js, pero
-  // sobre un `comisiones`/`miembros` que todavía no son el `state` global
-  // (init() los arma ANTES de asignarlos a `state`).
+  function mapMiembroFromDb_(r){
+    return { id:r.id, comisionId:r.comision_id, rolKey:r.rol_key, nombre:r.nombre, activo:r.activo, desde:r.desde||'', hasta:r.hasta||'', continuidad:r.continuidad||'' };
+  }
+  function mapTallerFromDb_(r){
+    return { id:r.id, comisionId:r.comision_id, nombre:r.nombre, tipo:r.tipo, fecha:r.fecha||'', oradores:r.oradores||[], cerrada:!!r.cerrada };
+  }
+  function mapEvaluacionFromDb_(r){
+    return {
+      id:r.id, comisionId:r.comision_id, tallerId:r.taller_id, miembroId:r.miembro_id,
+      rol:r.rol, nombreMiembro:r.nombre_miembro,
+      respuestas:r.respuestas||{}, comentarios:r.comentarios||{}, puntosDim:r.puntos_dim||{},
+      puntajeA:Number(r.puntaje_a)||0, puntajeTotal:Number(r.puntaje_total)||0, actualizado:r.actualizado||''
+    };
+  }
+  function mapCorteFromDb_(r){
+    return {
+      id:r.id, comisionId:r.comision_id, miembroId:r.miembro_id, rolKey:r.rol_key, corteKey:r.corte_key,
+      comentario:r.comentario||'', semaforoAlMomento:r.semaforo_al_momento||'',
+      promedioAlMomento: r.promedio_al_momento === null ? null : Number(r.promedio_al_momento),
+      requiereRevision:!!r.requiere_revision, fecha:r.fecha||'',
+      decisionSga:{ estado:r.decision_estado||'pendiente', comentario:r.decision_comentario||'', fecha:r.decision_fecha||'' }
+    };
+  }
+
+  // Reconstruye com.roles para todas las comisiones a partir de miembros —
+  // misma lógica que rederivarRoles() en state.js, pero sobre datos que
+  // todavía no son el `state` global (init() los arma ANTES de asignarlos).
   function derivarRoles_(comisiones, miembros){
     comisiones.forEach(function(com){
       var roles = {};
@@ -77,31 +86,47 @@ var dataService = (function(){
 
   // Punto de entrada de arranque. En modo local, `state` (armado de forma
   // síncrona por loadState() en state.js, antes de que esto corra) ya es
-  // correcto tal cual. En modo remoto, se pisa con lo que devuelva la
-  // Sheet — si el fetch falla (red caída, URL mal puesta, Sheet sin la
-  // pestaña esperada...), se avisa y se sigue con el `state` local como
-  // respaldo en vez de dejar la app en blanco.
+  // correcto tal cual. En modo remoto, se pisa con lo que devuelva
+  // Supabase — si falla (red caída, credenciales mal puestas...), se avisa
+  // y se sigue con el `state` local como respaldo en vez de dejar la app
+  // en blanco.
   function init(){
     if(!isRemote_()) return Promise.resolve(state);
-    return fetch(CONFIG.APPS_SCRIPT_URL + '?action=getAll')
-      .then(function(r){ return r.json(); })
-      .then(function(json){
-        if(!json || !json.ok) throw new Error((json && json.error) || 'Error desconocido del backend');
-        var data = json.data;
-        return { comisiones: derivarRoles_(data.comisiones, data.miembros), miembros: data.miembros, talleres: data.talleres, evaluaciones: data.evaluaciones, cortes: data.cortes, configCortes: data.configCortes };
-      })
-      .catch(function(err){
-        toast('No se pudo conectar con la base de datos (' + err.message + ') — usando los datos guardados en este navegador.', 'error');
-        return state;
-      });
+    return Promise.all([
+      supa.from('comisiones').select('*'),
+      supa.from('miembros').select('*'),
+      supa.from('talleres').select('*'),
+      supa.from('evaluaciones').select('*'),
+      supa.from('cortes').select('*'),
+      supa.from('config_cortes').select('*')
+    ]).then(function(results){
+      for(var i=0;i<results.length;i++){ if(results[i].error) throw results[i].error; }
+      var comisiones = results[0].data.map(function(r){ return { id:r.id, nombre:r.nombre, sigla:r.sigla }; });
+      var miembros = results[1].data.map(mapMiembroFromDb_);
+      var talleres = results[2].data.map(mapTallerFromDb_);
+      var evaluaciones = results[3].data.map(mapEvaluacionFromDb_);
+      var cortes = results[4].data.map(mapCorteFromDb_);
+      var configCortes = {};
+      results[5].data.forEach(function(r){ configCortes[r.key] = { inicio: r.inicio || '' }; });
+      return { comisiones: derivarRoles_(comisiones, miembros), miembros: miembros, talleres: talleres, evaluaciones: evaluaciones, cortes: cortes, configCortes: configCortes };
+    }).catch(function(err){
+      toast('No se pudo conectar con la base de datos (' + err.message + ') — usando los datos guardados en este navegador.', 'error');
+      return state;
+    });
   }
 
-  // Autenticación por usuario/contraseña contra la pestaña Usuarios de la
-  // Sheet — ver apps-script/Code.gs (login_). No tiene modo local: sin
-  // Sheet desplegada no hay contra qué validar cuentas.
+  // Autenticación por usuario/contraseña vía la función login() de
+  // Postgres (SECURITY DEFINER — valida contra usuarios.contrasena_hash
+  // sin exponer esa tabla directo, ver SUPABASE.md). Sin Supabase
+  // configurado no hay contra qué validar cuentas.
   function login(usuario, contrasena){
-    if(!isRemote_()) return Promise.reject(new Error('El backend todavía no está configurado (falta CONFIG.APPS_SCRIPT_URL en js/config.js).'));
-    return postToSheet_('login', { usuario: usuario, contrasena: contrasena });
+    if(!isRemote_()) return Promise.reject(new Error('El backend todavía no está configurado (falta CONFIG.SUPABASE_URL/SUPABASE_ANON_KEY en js/config.js).'));
+    return supa.rpc('login', { p_usuario: usuario, p_contrasena: contrasena }).then(function(res){
+      if(res.error) throw new Error(res.error.message);
+      var row = res.data && res.data[0];
+      if(!row) throw new Error('Usuario o contraseña incorrectos.');
+      return { rol: row.rol, comisionId: row.comision_id };
+    });
   }
 
   // Sustituye al miembro activo de un cargo (Subsecretario). El anterior
@@ -116,7 +141,13 @@ var dataService = (function(){
     state.miembros.push(nuevo);
     rederivarRoles();
     saveState();
-    fireAndWarn_('sustituirMiembro', { id: nuevo.id, comisionId: comisionId, rolKey: rolKey, nombre: nombre });
+    if(isRemote_()){
+      var p = actual
+        ? supa.from('miembros').update({ activo:false, hasta:nuevo.desde }).eq('id', actual.id)
+            .then(function(){ return supa.from('miembros').insert({ id:nuevo.id, comision_id:comisionId, rol_key:rolKey, nombre:nombre, desde:nuevo.desde }); })
+        : supa.from('miembros').insert({ id:nuevo.id, comision_id:comisionId, rol_key:rolKey, nombre:nombre, desde:nuevo.desde });
+      fireAndWarn_('sustituirMiembro', p);
+    }
     return Promise.resolve();
   }
 
@@ -125,28 +156,27 @@ var dataService = (function(){
   // vez. `cambios` = [{ rolKey, nuevoNombre, miembro }], donde `miembro` es
   // el miembro activo actual de ese cargo (o null si estaba vacante).
   function guardarMesa(comisionId, cambios){
-    var cambiosRemotos = [];
+    var writes = [];
     cambios.forEach(function(c){
       if(c.miembro){
         if(!c.nuevoNombre){
           c.miembro.activo = false;
           c.miembro.hasta = new Date().toISOString();
+          if(isRemote_()) writes.push(supa.from('miembros').update({ activo:false, hasta:c.miembro.hasta }).eq('id', c.miembro.id));
         }else{
           c.miembro.nombre = c.nuevoNombre;
+          if(isRemote_()) writes.push(supa.from('miembros').update({ nombre:c.nuevoNombre }).eq('id', c.miembro.id));
         }
-        cambiosRemotos.push({ rolKey: c.rolKey, nuevoNombre: c.nuevoNombre, miembroId: c.miembro.id });
       }else if(c.nuevoNombre){
         var id = uid('mb');
-        state.miembros.push({
-          id: id, comisionId: comisionId, rolKey: c.rolKey, nombre: c.nuevoNombre,
-          activo:true, desde:new Date().toISOString(), hasta:'', continuidad:''
-        });
-        cambiosRemotos.push({ rolKey: c.rolKey, nuevoNombre: c.nuevoNombre, id: id });
+        var desde = new Date().toISOString();
+        state.miembros.push({ id: id, comisionId: comisionId, rolKey: c.rolKey, nombre: c.nuevoNombre, activo:true, desde:desde, hasta:'', continuidad:'' });
+        if(isRemote_()) writes.push(supa.from('miembros').insert({ id:id, comision_id:comisionId, rol_key:c.rolKey, nombre:c.nuevoNombre, desde:desde }));
       }
     });
     rederivarRoles();
     saveState();
-    fireAndWarn_('guardarMesa', { comisionId: comisionId, cambios: cambiosRemotos });
+    if(isRemote_()) fireAndWarn_('guardarMesa', Promise.all(writes));
     return Promise.resolve();
   }
 
@@ -159,7 +189,7 @@ var dataService = (function(){
     t.fecha = campos.fecha;
     t.oradores = campos.oradores;
     saveState();
-    fireAndWarn_('saveTaller', { tallerId: tallerId, campos: campos });
+    if(isRemote_()) fireAndWarn_('saveTaller', supa.from('talleres').update({ nombre:campos.nombre, tipo:campos.tipo, fecha:campos.fecha, oradores:campos.oradores }).eq('id', tallerId));
     return Promise.resolve(t);
   }
 
@@ -168,18 +198,19 @@ var dataService = (function(){
     var t = { id: uid('tal'), comisionId: comisionId, nombre:'Nueva actividad', fecha:'', oradores:[], tipo:'taller', cerrada:false };
     state.talleres.push(t);
     saveState();
-    fireAndWarn_('crearTaller', { id: t.id, comisionId: comisionId });
+    if(isRemote_()) fireAndWarn_('crearTaller', supa.from('talleres').insert({ id:t.id, comision_id:comisionId, nombre:t.nombre, tipo:t.tipo, fecha:'', oradores:[] }));
     return Promise.resolve(t);
   }
 
   // Único hard-delete de toda la app: borra la actividad Y sus evaluaciones
   // (no tendría sentido dejar evaluaciones huérfanas de una actividad que
-  // ya no existe).
+  // ya no existe). En Supabase esto lo hace solo el "on delete cascade" de
+  // evaluaciones.taller_id — basta con borrar el taller.
   function eliminarTaller(tallerId){
     state.talleres = state.talleres.filter(function(x){ return x.id !== tallerId; });
     state.evaluaciones = state.evaluaciones.filter(function(ev){ return ev.tallerId !== tallerId; });
     saveState();
-    fireAndWarn_('eliminarTaller', { tallerId: tallerId });
+    if(isRemote_()) fireAndWarn_('eliminarTaller', supa.from('talleres').delete().eq('id', tallerId));
     return Promise.resolve();
   }
 
@@ -189,12 +220,13 @@ var dataService = (function(){
     if(!t) return Promise.resolve(null);
     t.cerrada = cerrada;
     saveState();
-    fireAndWarn_('setTallerCerrada', { tallerId: tallerId, cerrada: cerrada });
+    if(isRemote_()) fireAndWarn_('setTallerCerrada', supa.from('talleres').update({ cerrada:cerrada }).eq('id', tallerId));
     return Promise.resolve(t);
   }
 
   // Upsert de una evaluación de rúbrica, identificada por (comisionId,
-  // tallerId, miembroId) — a lo sumo una evaluación por esa combinación.
+  // tallerId, miembroId) — a lo sumo una evaluación por esa combinación
+  // (mismo unique constraint del lado de Postgres).
   function guardarEvaluacion(data){
     var existing = state.evaluaciones.find(function(e){
       return e.comisionId === data.comisionId && e.tallerId === data.tallerId && e.miembroId === data.miembroId;
@@ -219,14 +251,22 @@ var dataService = (function(){
       state.evaluaciones.push(existing);
     }
     saveState();
-    fireAndWarn_('guardarEvaluacion', extend_({ id: existing.id }, data));
+    if(isRemote_()){
+      fireAndWarn_('guardarEvaluacion', supa.from('evaluaciones').upsert({
+        id: existing.id, comision_id: data.comisionId, taller_id: data.tallerId, miembro_id: data.miembroId,
+        rol: data.rol, nombre_miembro: data.nombreMiembro,
+        respuestas: data.respuestas, comentarios: data.comentarios, puntos_dim: data.puntosDim,
+        puntaje_a: data.puntajeA, puntaje_total: data.puntajeTotal, actualizado: existing.actualizado
+      }, { onConflict: 'comision_id,taller_id,miembro_id' }));
+    }
     return Promise.resolve(existing);
   }
 
   // Upsert de un corte de seguimiento, identificado por (miembroId,
-  // corteKey) — a lo sumo un corte por esa combinación. Guardar un corte
-  // SIEMPRE reinicia decisionSga a "pendiente": es un checkpoint nuevo,
-  // cualquier decisión anterior del SG queda obsoleta.
+  // corteKey) — a lo sumo un corte por esa combinación (mismo unique
+  // constraint del lado de Postgres). Guardar un corte SIEMPRE reinicia
+  // decisionSga a "pendiente": es un checkpoint nuevo, cualquier decisión
+  // anterior del SG queda obsoleta.
   function guardarCorte(data){
     var existing = state.cortes.find(function(c){ return c.miembroId === data.miembroId && c.corteKey === data.corteKey; });
     var ahora = new Date().toISOString();
@@ -248,15 +288,20 @@ var dataService = (function(){
       state.cortes.push(existing);
     }
     saveState();
-    fireAndWarn_('guardarCorte', extend_({ id: existing.id }, data));
+    if(isRemote_()){
+      fireAndWarn_('guardarCorte', supa.from('cortes').upsert({
+        id: existing.id, comision_id: data.comisionId, miembro_id: data.miembroId, rol_key: data.rolKey, corte_key: data.corteKey,
+        comentario: data.comentario, semaforo_al_momento: data.semaforoAlMomento, promedio_al_momento: data.promedioAlMomento,
+        requiere_revision: data.requiereRevision, fecha: ahora,
+        decision_estado: 'pendiente', decision_comentario: '', decision_fecha: null
+      }, { onConflict: 'miembro_id,corte_key' }));
+    }
     return Promise.resolve(existing);
   }
 
   // Decisión del Secretario General sobre un corte — TOCA DOS REGISTROS A
-  // LA VEZ (el corte y la continuidad del miembro). En modo remoto,
-  // decidirCorte_() en Apps Script hace ambas escrituras bajo el mismo
-  // lock — no es una transacción real, pero es la mejor aproximación
-  // disponible (ver riesgos en README.md).
+  // LA VEZ (el corte y la continuidad del miembro); no es una transacción
+  // real (ver SUPABASE.md), pero las dos escrituras se disparan juntas.
   function decidirCorte(corteId, estado){
     var rec = state.cortes.find(function(c){ return c.id === corteId; });
     if(!rec) return Promise.resolve(null);
@@ -264,7 +309,11 @@ var dataService = (function(){
     var miembro = miembroPorId(rec.miembroId);
     if(miembro) miembro.continuidad = estado;
     saveState();
-    fireAndWarn_('decidirCorte', { corteId: corteId, estado: estado });
+    if(isRemote_()){
+      var p = supa.from('cortes').update({ decision_estado: estado, decision_comentario:'', decision_fecha: rec.decisionSga.fecha }).eq('id', corteId)
+        .then(function(){ return miembro ? supa.from('miembros').update({ continuidad: estado }).eq('id', miembro.id) : null; });
+      fireAndWarn_('decidirCorte', p);
+    }
     return Promise.resolve(rec);
   }
 
@@ -274,7 +323,7 @@ var dataService = (function(){
     if(!state.configCortes[corteKey]) state.configCortes[corteKey] = { inicio:'' };
     state.configCortes[corteKey].inicio = inicio;
     saveState();
-    fireAndWarn_('saveConfigCorte', { corteKey: corteKey, inicio: inicio });
+    if(isRemote_()) fireAndWarn_('saveConfigCorte', supa.from('config_cortes').update({ inicio:inicio }).eq('key', corteKey));
     return Promise.resolve();
   }
 

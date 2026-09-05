@@ -47,10 +47,10 @@
     }
   }
 
-  // Login por usuario/contraseña contra la pestaña Usuarios de la Sheet
-  // (ver apps-script/Code.gs, login_) — la cuenta ya dice a qué rol (y, si
-  // es EyC, a qué comisión) entra; ya no se elige a mano. Sin
-  // CONFIG.APPS_SCRIPT_URL configurado no hay contra qué validar, ver el
+  // Login por usuario/contraseña contra la tabla usuarios de Supabase (ver
+  // SUPABASE.md, función login()) — la cuenta ya dice a qué rol (y, si es
+  // EyC, a qué comisión) entra; ya no se elige a mano. Sin
+  // CONFIG.SUPABASE_URL configurado no hay contra qué validar, ver el
   // mensaje que devuelve dataService.login().
   function bindLoginFormEvents(){
     var form = document.getElementById('login-form');

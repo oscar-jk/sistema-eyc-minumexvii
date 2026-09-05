@@ -139,13 +139,13 @@
   }
 
   // El aviso de privacidad del footer deja de ser cierto en cuanto
-  // CONFIG.APPS_SCRIPT_URL tiene valor: los datos ya no viven solo en este
-  // navegador, viven en la Google Sheet (ver apps-script/).
+  // CONFIG.SUPABASE_URL tiene valor: los datos ya no viven solo en este
+  // navegador, viven en la base de datos del evento (ver SUPABASE.md).
   function updateFooterPrivacyNote(){
     var el = document.getElementById('footer-privacy-note');
     if(!el) return;
-    if(typeof CONFIG !== 'undefined' && CONFIG.APPS_SCRIPT_URL){
-      el.textContent = 'Los datos se guardan en la base de datos del evento (Google Sheets), no solo en este navegador.';
+    if(typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL){
+      el.textContent = 'Los datos se guardan en la base de datos del evento, no solo en este navegador.';
     }
   }
 
