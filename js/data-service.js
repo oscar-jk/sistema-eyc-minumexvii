@@ -35,13 +35,15 @@ var dataService = (function(){
   // Dispara una escritura "en segundo plano": la UI ya se actualizó de
   // forma optimista con el cambio local, esto solo confirma que también
   // llegó a Supabase. Un fallo se avisa con un toast, no bloquea ni
-  // revierte nada. `accion` es solo para el mensaje de error.
+  // revierte nada. `accion` es solo para logging interno — el usuario ve un
+  // mensaje genérico y amigable, nunca el nombre técnico ni el error crudo.
   function fireAndWarn_(accion, promise){
     if(!isRemote_()) return;
     promise.then(function(res){
       if(res && res.error) throw res.error;
     }).catch(function(err){
-      toast('No se pudo guardar "' + accion + '" en la base de datos: ' + (err.message || err), 'error');
+      console.error('[dataService] ' + accion + ':', err);
+      toast('No se pudo guardar este cambio en el servidor. Quedó guardado en este dispositivo — revisa tu conexión e inténtalo de nuevo.', 'error');
     });
   }
 
@@ -110,7 +112,8 @@ var dataService = (function(){
       results[5].data.forEach(function(r){ configCortes[r.key] = { inicio: r.inicio || '' }; });
       return { comisiones: derivarRoles_(comisiones, miembros), miembros: miembros, talleres: talleres, evaluaciones: evaluaciones, cortes: cortes, configCortes: configCortes };
     }).catch(function(err){
-      toast('No se pudo conectar con la base de datos (' + err.message + ') — usando los datos guardados en este navegador.', 'error');
+      console.error('[dataService] init:', err);
+      toast('No se pudo conectar con el servidor. Se están mostrando los datos guardados en este dispositivo.', 'error');
       return state;
     });
   }
@@ -120,12 +123,21 @@ var dataService = (function(){
   // sin exponer esa tabla directo, ver SUPABASE.md). Sin Supabase
   // configurado no hay contra qué validar cuentas.
   function login(usuario, contrasena){
-    if(!isRemote_()) return Promise.reject(new Error('El backend todavía no está configurado (falta CONFIG.SUPABASE_URL/SUPABASE_ANON_KEY en js/config.js).'));
+    if(!isRemote_()){
+      console.error('[dataService] login: falta CONFIG.SUPABASE_URL/SUPABASE_ANON_KEY en js/config.js.');
+      return Promise.reject(new Error('No se pudo conectar con el sistema. Contacta al administrador.'));
+    }
     return supa.rpc('login', { p_usuario: usuario, p_contrasena: contrasena }).then(function(res){
-      if(res.error) throw new Error(res.error.message);
+      if(res.error){
+        console.error('[dataService] login:', res.error);
+        throw new Error('No se pudo iniciar sesión. Inténtalo de nuevo en unos minutos.');
+      }
       var row = res.data && res.data[0];
       if(!row) throw new Error('Usuario o contraseña incorrectos.');
       return { rol: row.rol, comisionId: row.comision_id };
+    }, function(err){
+      console.error('[dataService] login (red):', err);
+      throw new Error('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.');
     });
   }
 

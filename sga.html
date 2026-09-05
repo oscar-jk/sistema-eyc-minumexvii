@@ -121,7 +121,7 @@
 </header>
 
 <div class="drawer-backdrop" id="drawer-backdrop"></div>
-<aside class="side-drawer" id="side-drawer" aria-hidden="true" aria-label="Menú">
+<aside class="side-drawer" id="side-drawer" aria-hidden="true" inert aria-label="Menú">
   <button type="button" class="drawer-close-btn" id="drawer-close" aria-label="Cerrar menú">&times;</button>
   <div class="side-drawer-head">
     <p class="side-drawer-session"><span class="session-badge-role" id="session-badge-role"></span><span id="session-badge-detail"></span></p>
@@ -188,10 +188,6 @@
         <div>
           <h1 class="view-title"><svg class="heading-star" aria-hidden="true"><use href="#mxvii-el-4"></use></svg>Monitoreo</h1>
           <p class="view-desc" id="admin-view-desc">Panel de Secretaría.</p>
-        </div>
-        <div class="admin-header-actions">
-          <button type="button" class="btn btn-primary" id="btn-seed-demo">Cargar datos de ejemplo completos</button>
-          <button type="button" class="btn btn-secondary" id="btn-reset-demo">Restablecer datos de prueba</button>
         </div>
       </div>
       <button type="button" class="icon-back-btn view-back-btn" data-action="volver" aria-label="Volver" title="Volver">
@@ -278,7 +274,6 @@
 <script src="js/render-evaluar.js"></script>
 <script src="js/render-progreso.js"></script>
 <script src="js/render-admin.js"></script>
-<script src="js/dev-tools.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -104,7 +104,7 @@
   function renderAdminCasosSubseHTML(){
     var voluntarios = todosLosVoluntarios();
     if(voluntarios.length === 0){
-      return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para monitorear su progreso aquí.');
+      return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para monitorear su progreso aquí.', 'comisiones', 'Ir a Comisiones');
     }
     var grupos = { rojo:[], amarillo:[], verde:[], gris:[] };
     voluntarios.forEach(function(v){
@@ -210,7 +210,7 @@
         '</div>' +
         '</div>';
     }).join('');
-    if(!rows) return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para ver el panel general aquí.');
+    if(!rows) return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para ver el panel general aquí.', 'comisiones', 'Ir a Comisiones');
     return rows;
   }
 
@@ -304,7 +304,7 @@
   function renderRendimientoRowsHTML(){
     var rows = computeRendimientoRows();
     if(rows.length === 0){
-      return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para ver su rendimiento aquí.');
+      return emptyState('Aún no hay mesas directivas asignadas', 'Asigna nombres en al menos una comisión para ver su rendimiento aquí.', 'comisiones', 'Ir a Comisiones');
     }
     var q = adminBusqueda.trim().toLowerCase();
     var filtered = rows.filter(function(row){
@@ -362,7 +362,7 @@
     var regs = state.evaluaciones.filter(function(e){ return typeof e.puntajeTotal === 'number'; })
       .slice().sort(function(a,b){ return new Date(b.actualizado) - new Date(a.actualizado); });
     if(regs.length === 0){
-      return emptyState('Aún no hay datos', 'Cuando se guarden evaluaciones en cualquier comisión, aparecerán aquí.');
+      return emptyState('Aún no hay datos', 'Cuando se guarden evaluaciones en cualquier comisión, aparecerán aquí.', 'comisiones', 'Ir a Comisiones');
     }
     var rows = regs.map(function(ev){
       var com = state.comisiones.find(function(c){ return c.id === ev.comisionId; });

@@ -74,6 +74,7 @@
     if(!drawer) return; // no existe en index.html (login), donde no hay panel
     drawer.classList.remove('is-open');
     drawer.setAttribute('aria-hidden', 'true');
+    drawer.inert = true;
     if(backdrop) backdrop.classList.remove('is-open');
     if(toggle) toggle.setAttribute('aria-expanded', 'false');
     document.documentElement.classList.remove('drawer-open');
@@ -85,6 +86,7 @@
     if(!drawer) return;
     drawer.classList.add('is-open');
     drawer.setAttribute('aria-hidden', 'false');
+    drawer.inert = false;
     if(backdrop) backdrop.classList.add('is-open');
     if(toggle) toggle.setAttribute('aria-expanded', 'true');
     document.documentElement.classList.add('drawer-open');
@@ -110,8 +112,6 @@
         confirmDiscardIfDirty(function(){ pushNavSnapshot_(); switchView(view); });
       });
     }
-    on_('btn-reset-demo', 'click', resetToTestData);
-    on_('btn-seed-demo', 'click', seedRichDemoData);
     on_('btn-cortes-config', 'click', abrirCortesConfigModal);
     on_('cortes-config-modal-close', 'click', cerrarCortesConfigModal);
     on_('help-btn', 'click', function(){

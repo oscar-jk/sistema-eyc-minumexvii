@@ -218,7 +218,7 @@
   function historicoHTML(com){
     var hasRegs = state.evaluaciones.some(function(e){ return e.comisionId === com.id; });
     if(!hasRegs){
-      return emptyState('Aún no hay historial', 'Cuando se guarde una evaluación de esta comisión, aparecerá aquí.');
+      return emptyStateSubtab('Aún no hay historial', 'Cuando se guarde una evaluación de esta comisión, aparecerá aquí.', 'evaluar', 'Ir a Evaluar');
     }
     var puntajeOptions = [['todos','Todos'],['alto','80–100'],['medio','50–79'],['bajo','0–49']];
     return '<div class="admin-filters">' +
