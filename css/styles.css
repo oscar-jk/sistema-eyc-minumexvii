@@ -453,7 +453,15 @@
      stacking context, ver la nota junto a --footer-h). display:none (no solo
      opacity) para que con la rúbrica limpia no reserve su alto igual — mismo
      hueco invisible que .form-save-bar-sticky, ver esa nota. */
-  .sticky-save-bar{display:none;position:sticky;bottom:calc(var(--footer-h) + .6rem);z-index:5;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:.7rem .9rem;margin-top:1.2rem;box-shadow:0 8px 24px rgba(0,0,0,.18);align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;}
+  /* margin-top grande (no los ~20px que se ven) a propósito: al hacer scroll
+     hasta el final de una dimensión larga (7 criterios), el panel fijo
+     "alcanzaba" el final del documento antes de que esas últimas filas
+     terminaran de subir por encima de él — se quedaban tapadas sin forma de
+     verlas ni tocarlas. Este margen le da a esas filas suficiente recorrido
+     de scroll para despejarse del todo antes de que el panel deje de poder
+     seguir pegado abajo. No se nota en pantalla: el panel casi siempre está
+     pegado abajo (position:sticky) mucho antes de llegar a ese hueco. */
+  .sticky-save-bar{display:none;position:sticky;bottom:calc(var(--footer-h) + .6rem);z-index:5;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:.7rem .9rem;margin-top:18rem;box-shadow:0 8px 24px rgba(0,0,0,.18);align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;}
   .sticky-save-bar.is-dirty{display:flex;}
 
   /* Acordeón compartido — misma caja con borde + chevron para .dim-accordion
@@ -618,7 +626,8 @@
      invisible bajo cada mesa directiva sin editar. Pierde el fundido suave
      al aparecer (display no es animable), pero eso pesa menos que el hueco
      permanente. */
-  .form-save-bar-sticky{display:none;position:sticky;bottom:calc(var(--footer-h) + .6rem);z-index:5;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:.7rem .9rem;box-shadow:0 8px 24px rgba(0,0,0,.18);margin-top:1.2rem;}
+  /* margin-top grande: mismo motivo que .sticky-save-bar, ver esa nota. */
+  .form-save-bar-sticky{display:none;position:sticky;bottom:calc(var(--footer-h) + .6rem);z-index:5;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:.7rem .9rem;box-shadow:0 8px 24px rgba(0,0,0,.18);margin-top:18rem;}
   .form-save-bar-sticky.is-dirty{display:flex;}
 
   @media (prefers-reduced-motion: reduce){
