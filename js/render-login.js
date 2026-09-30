@@ -74,7 +74,4 @@
           submitBtn.disabled = false;
         });
     });
-
-    var logoutBtn = document.getElementById('btn-logout');
-    if(logoutBtn) logoutBtn.addEventListener('click', doLogout);
   }

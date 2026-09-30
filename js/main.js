@@ -101,6 +101,10 @@
       else abrirDrawer_();
     });
     on_('drawer-close', 'click', cerrarNavMovil_);
+    // Va acá y no en bindLoginFormEvents(): esa función sale temprano en las
+    // páginas de rol (no tienen #login-form), que son justo donde vive este
+    // botón — por eso el logout nunca se enganchaba.
+    on_('btn-logout', 'click', doLogout);
     on_('drawer-backdrop', 'click', cerrarNavMovil_);
     document.addEventListener('keydown', function(e){
       if(e.key === 'Escape') cerrarNavMovil_();
@@ -171,13 +175,56 @@
     bindProgresoEvents();
   }
 
-  async function init(){
-    // state.js ya cargó `state` de forma síncrona antes de que esto corra
-    // (ver var state = loadState(); en state.js) — este await es hoy un
-    // no-op (Promise.resolve del mismo state), pero deja el punto de
-    // entrada exacto donde una carga remota del roster reemplazará la
-    // carga local, sin que nada más en este archivo tenga que cambiar.
-    state = await dataService.init();
+  // Pantalla de error cuando no se pudo cargar la información del
+  // servidor: reemplaza las vistas (no se muestra nada con datos viejos) y
+  // ofrece reintentar sin recargar la página. El panel lateral sigue
+  // funcionando, así que también se puede cerrar sesión desde acá.
+  function mostrarErrorCarga_(onRetry){
+    var main = document.getElementById('main');
+    if(!main) return;
+    document.documentElement.classList.add('app-load-failed');
+    var panel = document.getElementById('load-error');
+    if(!panel){
+      panel = document.createElement('div');
+      panel.id = 'load-error';
+      panel.className = 'card load-error';
+      panel.setAttribute('role', 'alert');
+      panel.innerHTML =
+        '<h2 class="load-error-title">No se pudo cargar la información</h2>' +
+        '<p class="load-error-desc">No hay conexión con el servidor o está tardando en responder. Revisa tu conexión a internet y vuelve a intentarlo. Si el problema sigue, avisa a la Subsecretaría.</p>' +
+        '<div class="load-error-actions"><button type="button" class="btn btn-primary" id="load-error-retry">Reintentar</button></div>';
+      main.insertBefore(panel, main.firstChild);
+    }
+    var btn = document.getElementById('load-error-retry');
+    btn.disabled = false;
+    btn.textContent = 'Reintentar';
+    btn.onclick = function(){
+      btn.disabled = true;
+      btn.textContent = 'Conectando…';
+      onRetry();
+    };
+    btn.focus();
+  }
+  function ocultarErrorCarga_(){
+    document.documentElement.classList.remove('app-load-failed');
+    var panel = document.getElementById('load-error');
+    if(panel) panel.remove();
+  }
+
+  // Carga los datos del servidor y entra a la app; si falla, deja la
+  // pantalla de error con "Reintentar", que vuelve a llamar a esto mismo.
+  function cargarDatosYEntrar_(){
+    return dataService.init().then(function(nuevoState){
+      state = nuevoState;
+      ocultarErrorCarga_();
+      updateHeaderCounter();
+      enterApp();
+    }, function(){
+      mostrarErrorCarga_(cargarDatosYEntrar_);
+    });
+  }
+
+  function init(){
     // EXPECTED_ROLE se declara inline en eyc/subse/sga.html, antes de estos
     // <script src> (no existe en index.html — el login nunca redirige solo,
     // aunque ya haya sesión guardada, para que "← Volver" tenga a dónde
@@ -188,7 +235,6 @@
       return;
     }
     initTheme();
-    updateHeaderCounter();
     updateFooterPrivacyNote();
     bindLoginFormEvents();
     bindGlobalEvents();
@@ -196,7 +242,9 @@
     window.addEventListener('beforeunload', function(e){
       if(hasAnyDirty()){ e.preventDefault(); e.returnValue = ''; }
     });
-    if(esPaginaDeRol) enterApp();
+    // El login no muestra datos de comisiones: no tiene sentido cargar
+    // todas las tablas ahí (ni bloquear el login si esa carga falla).
+    if(esPaginaDeRol) cargarDatosYEntrar_();
   }
 
   document.addEventListener('DOMContentLoaded', init);

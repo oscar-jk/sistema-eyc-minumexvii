@@ -221,19 +221,26 @@
     }
     var decidirBtns = document.querySelectorAll('[data-decidir-corte]');
     for(var j=0;j<decidirBtns.length;j++){
-      decidirBtns[j].addEventListener('click', function(e){ adminDecidirCorte(e.currentTarget.dataset.decidirCorte, e.currentTarget.dataset.decidirEstado); });
+      decidirBtns[j].addEventListener('click', function(e){ adminDecidirCorte(e.currentTarget.dataset.decidirCorte, e.currentTarget.dataset.decidirEstado, e.currentTarget); });
     }
   }
 
   // "No continúa" deja al voluntario marcado — eso es lo que habilita al
   // Subsecretario a sustituirlo desde su panel; sin esto la decisión del SG
   // no cambiaría ningún estado real.
-  function adminDecidirCorte(corteId, estado){
+  function adminDecidirCorte(corteId, estado, btn){
     var rec = state.cortes.find(function(c){ return c.id === corteId; });
     if(!rec) return;
-    dataService.decidirCorte(corteId, estado);
-    toast(estado === 'continua' ? 'Marcado como "Continúa"' : 'Marcado como "No continúa"');
-    renderAdmin();
+    // Los dos botones de la decisión (Continúa / No continúa) se bloquean
+    // juntos para que no se pueda disparar la otra mientras se guarda.
+    var hermanos = btn && btn.parentElement ? btn.parentElement.querySelectorAll('[data-decidir-corte]') : [];
+    for(var i=0;i<hermanos.length;i++) if(hermanos[i] !== btn) hermanos[i].disabled = true;
+    conGuardado_(btn, dataService.decidirCorte(corteId, estado)).then(function(){
+      toast(estado === 'continua' ? 'Marcado como "Continúa"' : 'Marcado como "No continúa"');
+      renderAdmin();
+    }, function(){
+      for(var i=0;i<hermanos.length;i++) hermanos[i].disabled = false;
+    });
   }
 
   function adminConfigCortesHTML(){
@@ -254,15 +261,19 @@
     for(var i=0;i<inputs.length;i++){
       inputs[i].addEventListener('change', function(e){
         var key = e.target.dataset.corteConfig;
-        dataService.saveConfigCorte(key, e.target.value);
+        var input = e.target;
+        var previo = (state.configCortes[key] && state.configCortes[key].inicio) || '';
+        conGuardado_(input, dataService.saveConfigCorte(key, input.value)).then(function(){
         // El modal vive fuera de #admin-content, así que sobrevive al
         // refresco de abajo — pero su propio contenido (qué fase está
         // activa) hay que actualizarlo aparte. renderAdmin() es necesario
         // además, porque las tarjetas de "Casos" ofrecen botones "Evaluar
         // CorteX" según corteFaseActiva(), y sin esto quedarían obsoletos
         // hasta la próxima navegación.
-        renderCortesConfigModalContent();
-        renderAdmin();
+          renderCortesConfigModalContent();
+          renderAdmin();
+          toast('Fecha guardada');
+        }, function(){ input.value = previo; });
       });
     }
   }

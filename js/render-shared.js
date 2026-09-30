@@ -25,12 +25,15 @@
     if(!pendingSustituir) return;
     var nombre = document.getElementById('sustituir-modal-input').value.trim();
     if(!nombre) return;
-    dataService.sustituirMiembro(pendingSustituir.comisionId, pendingSustituir.rolKey, nombre);
-    updateHeaderCounter();
-    toast('Miembro sustituido');
-    cerrarSustituirModal();
-    if(document.getElementById('view-comisiones').classList.contains('is-active')) renderComisiones();
-    if(document.getElementById('view-admin').classList.contains('is-active')) renderAdmin();
+    var okBtn = document.getElementById('sustituir-modal-ok');
+    if(okBtn && okBtn.disabled) return; // ya hay una sustitución en curso (p. ej. Enter repetido)
+    conGuardado_(okBtn, dataService.sustituirMiembro(pendingSustituir.comisionId, pendingSustituir.rolKey, nombre)).then(function(){
+      updateHeaderCounter();
+      toast('Miembro sustituido');
+      cerrarSustituirModal();
+      if(document.getElementById('view-comisiones').classList.contains('is-active')) renderComisiones();
+      if(document.getElementById('view-admin').classList.contains('is-active')) renderAdmin();
+    }, ignorarRechazo_);
   }
 
   function historicoDeMiembro(miembroId){

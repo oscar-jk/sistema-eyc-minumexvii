@@ -331,7 +331,8 @@
         return;
       }
 
-      if(e.target.closest('[data-action="save-mesa"]')){
+      var saveMesaBtn = e.target.closest('[data-action="save-mesa"]');
+      if(saveMesaBtn){
         var com = currentComision();
         if(!com) return;
         var cambios = [];
@@ -346,10 +347,11 @@
         });
         if(cambios.length === 0){ clearDirty('mesa'); return; }
         var aplicarCambiosMesa = function(){
-          dataService.guardarMesa(com.id, cambios);
-          clearDirty('mesa');
-          renderComisiones();
-          toast('Mesa directiva guardada');
+          conGuardado_(saveMesaBtn, dataService.guardarMesa(com.id, cambios)).then(function(){
+            clearDirty('mesa');
+            renderComisiones();
+            toast('Mesa directiva guardada');
+          }, ignorarRechazo_);
         };
         // Si alguna persona renombrada ya tiene evaluaciones, confirmamos que
         // es un error de tipeo — un cambio de persona real debe pasar por
@@ -369,20 +371,22 @@
         return;
       }
 
-      if(e.target.closest('[data-action="save-taller"]')){
+      var saveTallerBtn = e.target.closest('[data-action="save-taller"]');
+      if(saveTallerBtn){
         var row = e.target.closest('.taller-row');
         var t = state.talleres.find(function(x){ return x.id === row.dataset.id; });
         if(!t) return;
         var holder = row.querySelector('[data-oradores-holder]');
-        dataService.saveTaller(t.id, {
+        conGuardado_(saveTallerBtn, dataService.saveTaller(t.id, {
           nombre: row.querySelector('[data-field="nombre"]').value.trim() || 'Actividad sin nombre',
           tipo: row.querySelector('[data-field="tipo"]').value,
           fecha: row.querySelector('[data-field="fecha"]').value,
           oradores: JSON.parse(holder.dataset.selected || '[]')
-        });
-        clearDirty('taller-' + t.id);
-        renderComisiones();
-        toast('Actividad guardada');
+        })).then(function(){
+          clearDirty('taller-' + t.id);
+          renderComisiones();
+          toast('Actividad guardada');
+        }, ignorarRechazo_);
         return;
       }
 
@@ -420,18 +424,20 @@
         });
         return;
       }
-      if(e.target.closest('#btn-add-taller')){
+      var addTallerBtn = e.target.closest('#btn-add-taller');
+      if(addTallerBtn){
         confirmDiscardIfDirty(function(){
           var com = currentComision();
           if(!com) return;
-          dataService.crearTaller(com.id);
-          renderComisiones();
-          requestAnimationFrame(function(){
-            var rows = el.querySelectorAll('.taller-row');
-            var last = rows[rows.length - 1];
-            var input = last && last.querySelector('input[type=text]');
-            if(input){ input.focus(); input.select(); }
-          });
+          conGuardado_(addTallerBtn, dataService.crearTaller(com.id)).then(function(){
+            renderComisiones();
+            requestAnimationFrame(function(){
+              var rows = el.querySelectorAll('.taller-row');
+              var last = rows[rows.length - 1];
+              var input = last && last.querySelector('input[type=text]');
+              if(input){ input.focus(); input.select(); }
+            });
+          }, ignorarRechazo_);
         });
         return;
       }
@@ -442,11 +448,12 @@
           var t = state.talleres.find(function(x){ return x.id === row.dataset.id; });
           if(!t) return;
           if(confirm('¿Eliminar la actividad "' + t.nombre + '"? También se eliminarán sus evaluaciones registradas.')){
-            dataService.eliminarTaller(t.id);
-            clearDirty('taller-' + t.id);
-            renderComisiones();
-            updateHeaderCounter();
-            toast('Actividad eliminada');
+            conGuardado_(delBtn, dataService.eliminarTaller(t.id)).then(function(){
+              clearDirty('taller-' + t.id);
+              renderComisiones();
+              updateHeaderCounter();
+              toast('Actividad eliminada');
+            }, ignorarRechazo_);
           }
         });
         return;
@@ -458,16 +465,18 @@
         var tCerrar = comCerrar && state.talleres.find(function(x){ return x.id === cerrarRow.dataset.id; });
         if(!tCerrar || !comCerrar) return;
         if(tCerrar.cerrada){
-          dataService.setTallerCerrada(tCerrar.id, false);
-          renderComisiones();
-          toast('Actividad reabierta');
+          conGuardado_(toggleCerrarBtn, dataService.setTallerCerrada(tCerrar.id, false)).then(function(){
+            renderComisiones();
+            toast('Actividad reabierta');
+          }, ignorarRechazo_);
           return;
         }
         var pendientes = miembrosPendientesEnTaller(comCerrar, tCerrar);
         if(pendientes.length === 0){
-          dataService.setTallerCerrada(tCerrar.id, true);
-          renderComisiones();
-          toast('Actividad cerrada');
+          conGuardado_(toggleCerrarBtn, dataService.setTallerCerrada(tCerrar.id, true)).then(function(){
+            renderComisiones();
+            toast('Actividad cerrada');
+          }, ignorarRechazo_);
           return;
         }
         var aviso = cerrarRow.querySelector('[data-cierre-aviso]');
