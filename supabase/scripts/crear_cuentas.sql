@@ -23,7 +23,10 @@ with nuevas as (
     (select string_agg(substr('abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',
                               1 + (get_byte(b.bytes, i) % 55), 1), '')
        from (select extensions.gen_random_bytes(12) as bytes) b,
-            generate_series(0, 11) i) as clave
+            generate_series(0, 11) i
+      -- Referencia a la fila: sin esto la subconsulta no está correlacionada
+      -- y Postgres la evalúa UNA vez (InitPlan) → misma clave para todos.
+      where u.usuario is not null) as clave
   from public.usuarios u
   where not exists (
     select 1 from auth.users au where au.email = lower(u.usuario) || '@eyc-minume.invalid'
