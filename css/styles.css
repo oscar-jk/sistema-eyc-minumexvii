@@ -231,6 +231,8 @@
   .add-bar{display:flex;justify-content:flex-end;margin-bottom:1.1rem;}
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.1rem;border-radius:var(--radius-md);font-size:.98rem;font-weight:600;border:1px solid transparent;cursor:pointer;transition:filter .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease),background .15s var(--ease);white-space:nowrap;min-height:44px;}
+  .btn:disabled{opacity:.55;cursor:not-allowed;filter:none;}
+  .btn[aria-busy="true"]{cursor:progress;}
   /* Sólido, no --accent-gradient: el extremo claro del degradado
      (--accent-solid) da solo 2.32:1 con texto blanco encima — bajo el
      mínimo 4.5:1. --accent-solid-2 sólido da 8.05:1 (claro) / 5.58:1
@@ -285,6 +287,12 @@
 
   /* Empty state */
   .empty-state{padding:.5rem 0;max-width:44ch;}
+  /* Pantalla de error de carga (ver mostrarErrorCarga_ en main.js) */
+  .app-load-failed .view{display:none !important;}
+  .load-error{max-width:52ch;margin:2rem auto;}
+  .load-error-title{font-size:1.25rem;font-weight:600;margin-bottom:.5rem;}
+  .load-error-desc{color:var(--text-secondary);font-size:1rem;margin-bottom:1.1rem;}
+  .load-error-actions{display:flex;gap:.6rem;flex-wrap:wrap;}
   .empty-state h3{font-size:1.15rem;font-weight:600;margin-bottom:.4rem;}
   .empty-state p{color:var(--text-secondary);font-size:1rem;margin-bottom:1.1rem;}
 

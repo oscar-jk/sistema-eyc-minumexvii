@@ -2,7 +2,12 @@
 
   var state = loadState();
 
-  var session = loadSession();
+  // Rol y comisión de la cuenta, leídos del JWT de Supabase Auth
+  // (app_metadata, que solo el servidor puede escribir) — ver
+  // dataService.obtenerSesion() y init() en main.js. Ya NO sale de
+  // localStorage: lo que diga el navegador no da acceso a ningún dato, eso
+  // lo deciden las políticas RLS con el mismo JWT.
+  var session = null;
 
   // Cambios sin guardar por formulario (mesa directiva, una actividad puntual,
   // evaluar, cortes...) — bloquean la navegación hasta confirmar.
@@ -135,16 +140,9 @@
   }
 
   /* ---------- Sesión / roles ---------- */
-  function loadSession(){
-    try{
-      var raw = localStorage.getItem(SESSION_KEY);
-      if(raw) return JSON.parse(raw);
-    }catch(e){}
-    return null;
-  }
-  function saveSession(){
-    try{ localStorage.setItem(SESSION_KEY, JSON.stringify(session)); }catch(e){}
-  }
+  // La sesión vieja ({role, comisionId} en texto plano) ya no se usa; se
+  // borra para no dejar basura que parezca válida.
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
   function currentComision(){
     return state.comisiones.find(function(c){ return c.id === comisionDetailId; });
   }

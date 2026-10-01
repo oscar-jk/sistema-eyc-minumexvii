@@ -6,19 +6,23 @@
 
    - LOCAL (URL/llave vacías): todo vive en localStorage vía state.js.
    - REMOTO (con valores, el caso normal desde que existe SUPABASE.md):
-     Supabase (Postgres) es la fuente de verdad. Cada mutador actualiza
-     `state` en memoria de inmediato (la UI no espera a la red) y ADEMÁS
-     dispara la escritura correspondiente en Supabase en segundo plano —
-     si esa escritura falla, se avisa con un toast de error en vez de
-     fallar en silencio, pero no se revierte el cambio local (ver
-     SUPABASE.md, "sin transacciones reales"). localStorage se sigue
-     llenando igual como respaldo, por si falla la red a mitad de un corte
-     durante el evento.
+     Supabase (Postgres) es la fuente de verdad. Cada mutador escribe
+     PRIMERO en Supabase y devuelve una promesa: solo si el servidor
+     confirma se actualiza `state` (y el respaldo en localStorage). Si la
+     escritura falla, la promesa se rechaza con un mensaje listo para
+     mostrar y NO se toca `state` — quien llama debe mantener el formulario
+     con sus cambios y avisar (ver conGuardado_ en helpers.js).
 
    Los "getters" (state.talleres.filter(...), miembroActivo(...), etc.) NO
    pasan por acá — siguen leyendo `state` directo y síncrono, como siempre.
-   Solo init(), login() y los métodos mutadores de abajo hablan con el
-   backend.
+   Solo init(), la autenticación y los métodos mutadores de abajo hablan
+   con el backend.
+
+   Autenticación: Supabase Auth. supabase-js guarda el JWT en
+   localStorage y lo renueva solo; cada consulta viaja con él y las
+   políticas RLS deciden qué puede leer/escribir cada rol (ver
+   supabase/migrations). Rol y comisión van en app_metadata del usuario,
+   que el cliente no puede modificar.
 
    Nombres de columna: Postgres usa snake_case (comision_id, rol_key...),
    el resto del sitio usa camelCase (comisionId, rolKey...) — las funciones
@@ -32,18 +36,35 @@ var dataService = (function(){
     return true;
   }
 
-  // Dispara una escritura "en segundo plano": la UI ya se actualizó de
-  // forma optimista con el cambio local, esto solo confirma que también
-  // llegó a Supabase. Un fallo se avisa con un toast, no bloquea ni
-  // revierte nada. `accion` es solo para logging interno — el usuario ve un
-  // mensaje genérico y amigable, nunca el nombre técnico ni el error crudo.
-  function fireAndWarn_(accion, promise){
-    if(!isRemote_()) return;
-    promise.then(function(res){
-      if(res && res.error) throw res.error;
+  var MSG_ERROR_GUARDADO = 'No se pudo guardar en el servidor. Tus cambios siguen en pantalla — revisa tu conexión e inténtalo de nuevo.';
+
+  // UPDATE/DELETE que RLS no permite (o sobre una fila que ya no existe)
+  // NO devuelven error en PostgREST: simplemente afectan 0 filas. Sin esta
+  // revisión, la UI diría "guardado" cuando no se guardó nada. Exige
+  // .select() en la consulta para que el servidor devuelva las filas.
+  function conFilas_(consulta){
+    return consulta.select('id').then(function(r){
+      if(!r.error && (!r.data || r.data.length === 0)){
+        r.error = { message: 'La escritura no afectó ninguna fila (sin permiso o registro inexistente).' };
+      }
+      return r;
+    });
+  }
+
+  // Ejecuta una escritura contra Supabase y espera la confirmación. `fn`
+  // devuelve una promesa de supabase-js (o un arreglo/cadena de ellas
+  // resueltas). supabase-js NO rechaza ante errores de la base: los deja en
+  // res.error, por eso se revisan aquí. Sin Supabase configurado (modo
+  // local) no hay nada que confirmar y resuelve de inmediato. `accion` es
+  // solo para el log interno; el usuario ve un mensaje genérico.
+  function escribir_(accion, fn){
+    if(!isRemote_()) return Promise.resolve();
+    return Promise.resolve().then(fn).then(function(res){
+      var lista = Array.isArray(res) ? res : [res];
+      lista.forEach(function(r){ if(r && r.error) throw r.error; });
     }).catch(function(err){
       console.error('[dataService] ' + accion + ':', err);
-      toast('No se pudo guardar este cambio en el servidor. Quedó guardado en este dispositivo — revisa tu conexión e inténtalo de nuevo.', 'error');
+      throw new Error(MSG_ERROR_GUARDADO);
     });
   }
 
@@ -89,11 +110,17 @@ var dataService = (function(){
   // Punto de entrada de arranque. En modo local, `state` (armado de forma
   // síncrona por loadState() en state.js, antes de que esto corra) ya es
   // correcto tal cual. En modo remoto, se pisa con lo que devuelva
-  // Supabase — si falla (red caída, credenciales mal puestas...), se avisa
-  // y se sigue con el `state` local como respaldo en vez de dejar la app
-  // en blanco.
+  // Supabase — si falla, la promesa se rechaza (ver el catch de abajo).
   function init(){
-    if(!isRemote_()) return Promise.resolve(state);
+    // Promise.resolve().then(): si supabase-js no cargó (CDN caído), el
+    // ReferenceError de isRemote_() termina como rechazo y no como
+    // excepción síncrona — así main.js muestra la pantalla de error igual.
+    return Promise.resolve().then(function(){
+      if(!isRemote_()) return state;
+      return cargarRemoto_();
+    });
+  }
+  function cargarRemoto_(){
     return Promise.all([
       supa.from('comisiones').select('*'),
       supa.from('miembros').select('*'),
@@ -112,32 +139,109 @@ var dataService = (function(){
       results[5].data.forEach(function(r){ configCortes[r.key] = { inicio: r.inicio || '' }; });
       return { comisiones: derivarRoles_(comisiones, miembros), miembros: miembros, talleres: talleres, evaluaciones: evaluaciones, cortes: cortes, configCortes: configCortes };
     }).catch(function(err){
+      // Sin respaldo silencioso: mostrar datos viejos de localStorage como
+      // si fueran los reales llevaría a evaluar sobre información obsoleta.
+      // main.js muestra una pantalla de error con "Reintentar".
       console.error('[dataService] init:', err);
-      toast('No se pudo conectar con el servidor. Se están mostrando los datos guardados en este dispositivo.', 'error');
-      return state;
+      throw new Error('No se pudo conectar con el servidor.');
     });
   }
 
-  // Autenticación por usuario/contraseña vía la función login() de
-  // Postgres (SECURITY DEFINER — valida contra usuarios.contrasena_hash
-  // sin exponer esa tabla directo, ver SUPABASE.md). Sin Supabase
-  // configurado no hay contra qué validar cuentas.
+  /* ---------- Autenticación (Supabase Auth) ---------- */
+
+  function emailDeUsuario_(usuario){
+    return String(usuario || '').trim().toLowerCase() + '@' + CONFIG.AUTH_EMAIL_DOMAIN;
+  }
+
+  // Traduce la sesión de Supabase Auth al objeto `session` que usa el
+  // resto del sitio. app_metadata solo lo escribe el servidor (ver
+  // supabase/scripts/crear_cuentas.sql).
+  function sesionDesdeAuth_(authSession){
+    if(!authSession || !authSession.user) return null;
+    var meta = authSession.user.app_metadata || {};
+    if(!meta.rol) return null;
+    return {
+      role: meta.rol,
+      comisionId: meta.comision_id || null,
+      debeCambiarContrasena: meta.debe_cambiar_contrasena === true
+    };
+  }
+
+  function sinConexion_(){
+    return new Error('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.');
+  }
+
+  // Sesión vigente de este navegador (o null si no hay). Rechaza solo si
+  // supabase-js no cargó o falla la red al renovar el token.
+  function obtenerSesion(){
+    return Promise.resolve().then(function(){
+      if(!isRemote_()) return null; // sin Supabase no hay cuentas
+      return supa.auth.getSession().then(function(res){
+        if(res.error) throw res.error;
+        return sesionDesdeAuth_(res.data.session);
+      });
+    }).catch(function(err){
+      console.error('[dataService] obtenerSesion:', err);
+      throw sinConexion_();
+    });
+  }
+
+  // Login por usuario/contraseña. Supabase Auth limita los intentos por IP
+  // (responde 429), algo que la función login() anterior no hacía.
   function login(usuario, contrasena){
-    if(!isRemote_()){
+    var remoto;
+    try{ remoto = isRemote_(); }catch(err){
+      console.error('[dataService] login: supabase-js no cargó', err);
+      return Promise.reject(sinConexion_());
+    }
+    if(!remoto){
       console.error('[dataService] login: falta CONFIG.SUPABASE_URL/SUPABASE_ANON_KEY en js/config.js.');
       return Promise.reject(new Error('No se pudo conectar con el sistema. Contacta al administrador.'));
     }
-    return supa.rpc('login', { p_usuario: usuario, p_contrasena: contrasena }).then(function(res){
+    return supa.auth.signInWithPassword({ email: emailDeUsuario_(usuario), password: contrasena }).then(function(res){
       if(res.error){
         console.error('[dataService] login:', res.error);
+        if(res.error.status === 400 || res.error.code === 'invalid_credentials') throw new Error('Usuario o contraseña incorrectos.');
+        if(res.error.status === 429) throw new Error('Demasiados intentos. Espera unos minutos e inténtalo de nuevo.');
+        if(!res.error.status) throw sinConexion_();
         throw new Error('No se pudo iniciar sesión. Inténtalo de nuevo en unos minutos.');
       }
-      var row = res.data && res.data[0];
-      if(!row) throw new Error('Usuario o contraseña incorrectos.');
-      return { rol: row.rol, comisionId: row.comision_id };
-    }, function(err){
-      console.error('[dataService] login (red):', err);
-      throw new Error('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.');
+      var s = sesionDesdeAuth_(res.data.session);
+      if(!s){
+        supa.auth.signOut();
+        throw new Error('Esta cuenta no tiene un rol asignado. Contacta a la Subsecretaría.');
+      }
+      return s;
+    });
+  }
+
+  // Cambio de contraseña (obligatorio en el primer ingreso). Un trigger en
+  // auth.users quita debe_cambiar_contrasena al cambiar el hash; el
+  // refreshSession() trae un JWT nuevo sin ese flag, que es el que RLS
+  // exige para dar acceso a los datos.
+  function cambiarContrasena(nueva){
+    return supa.auth.updateUser({ password: nueva }).then(function(res){
+      if(res.error){
+        console.error('[dataService] cambiarContrasena:', res.error);
+        if(res.error.code === 'same_password') throw new Error('La contraseña nueva debe ser distinta de la temporal.');
+        if(res.error.code === 'weak_password') throw new Error('Esa contraseña es demasiado débil. Usa al menos 8 caracteres, mezclando letras y números.');
+        if(!res.error.status) throw sinConexion_();
+        throw new Error('No se pudo cambiar la contraseña. Inténtalo de nuevo.');
+      }
+      return supa.auth.refreshSession();
+    }).then(function(res){
+      if(res.error) throw sinConexion_();
+      return sesionDesdeAuth_(res.data.session);
+    });
+  }
+
+  // Cierra la sesión en el servidor (revoca el refresh token) y borra el
+  // JWT local. Si la red falla, supabase-js igual borra la sesión local.
+  function logout(){
+    return Promise.resolve().then(function(){
+      if(isRemote_()) return supa.auth.signOut();
+    }).catch(function(err){
+      console.error('[dataService] logout:', err);
     });
   }
 
@@ -145,22 +249,24 @@ var dataService = (function(){
   // queda inactivo con su historial intacto; el nuevo arranca sin evaluaciones.
   function sustituirMiembro(comisionId, rolKey, nombre){
     var actual = miembroActivo(comisionId, rolKey);
-    if(actual){ actual.activo = false; actual.hasta = new Date().toISOString(); }
+    var ahora = new Date().toISOString();
     var nuevo = {
       id: uid('mb'), comisionId: comisionId, rolKey: rolKey,
-      nombre: nombre, activo:true, desde:new Date().toISOString(), hasta:'', continuidad:''
+      nombre: nombre, activo:true, desde:ahora, hasta:'', continuidad:''
     };
-    state.miembros.push(nuevo);
-    rederivarRoles();
-    saveState();
-    if(isRemote_()){
-      var p = actual
-        ? supa.from('miembros').update({ activo:false, hasta:nuevo.desde }).eq('id', actual.id)
-            .then(function(){ return supa.from('miembros').insert({ id:nuevo.id, comision_id:comisionId, rol_key:rolKey, nombre:nombre, desde:nuevo.desde }); })
-        : supa.from('miembros').insert({ id:nuevo.id, comision_id:comisionId, rol_key:rolKey, nombre:nombre, desde:nuevo.desde });
-      fireAndWarn_('sustituirMiembro', p);
-    }
-    return Promise.resolve();
+    return escribir_('sustituirMiembro', function(){
+      var alta = function(){ return supa.from('miembros').insert({ id:nuevo.id, comision_id:comisionId, rol_key:rolKey, nombre:nombre, desde:ahora }); };
+      if(!actual) return alta();
+      return conFilas_(supa.from('miembros').update({ activo:false, hasta:ahora }).eq('id', actual.id)).then(function(r){
+        if(r.error) return r; // no se da de alta al nuevo si la baja falló
+        return alta();
+      });
+    }).then(function(){
+      if(actual){ actual.activo = false; actual.hasta = ahora; }
+      state.miembros.push(nuevo);
+      rederivarRoles();
+      saveState();
+    });
   }
 
   // Aplica hasta 4 cambios de mesa directiva a la vez (uno por cargo):
@@ -168,50 +274,62 @@ var dataService = (function(){
   // vez. `cambios` = [{ rolKey, nuevoNombre, miembro }], donde `miembro` es
   // el miembro activo actual de ese cargo (o null si estaba vacante).
   function guardarMesa(comisionId, cambios){
-    var writes = [];
-    cambios.forEach(function(c){
-      if(c.miembro){
-        if(!c.nuevoNombre){
-          c.miembro.activo = false;
-          c.miembro.hasta = new Date().toISOString();
-          if(isRemote_()) writes.push(supa.from('miembros').update({ activo:false, hasta:c.miembro.hasta }).eq('id', c.miembro.id));
-        }else{
-          c.miembro.nombre = c.nuevoNombre;
-          if(isRemote_()) writes.push(supa.from('miembros').update({ nombre:c.nuevoNombre }).eq('id', c.miembro.id));
+    var ahora = new Date().toISOString();
+    var altas = [];
+    return escribir_('guardarMesa', function(){
+      return Promise.all(cambios.map(function(c){
+        if(c.miembro){
+          if(!c.nuevoNombre) return conFilas_(supa.from('miembros').update({ activo:false, hasta:ahora }).eq('id', c.miembro.id));
+          return conFilas_(supa.from('miembros').update({ nombre:c.nuevoNombre }).eq('id', c.miembro.id));
         }
-      }else if(c.nuevoNombre){
-        var id = uid('mb');
-        var desde = new Date().toISOString();
-        state.miembros.push({ id: id, comisionId: comisionId, rolKey: c.rolKey, nombre: c.nuevoNombre, activo:true, desde:desde, hasta:'', continuidad:'' });
-        if(isRemote_()) writes.push(supa.from('miembros').insert({ id:id, comision_id:comisionId, rol_key:c.rolKey, nombre:c.nuevoNombre, desde:desde }));
-      }
+        if(c.nuevoNombre){
+          var id = uid('mb');
+          altas.push({ c:c, id:id });
+          return supa.from('miembros').insert({ id:id, comision_id:comisionId, rol_key:c.rolKey, nombre:c.nuevoNombre, desde:ahora });
+        }
+        return null;
+      }));
+    }).then(function(){
+      cambios.forEach(function(c){
+        if(c.miembro){
+          if(!c.nuevoNombre){ c.miembro.activo = false; c.miembro.hasta = ahora; }
+          else c.miembro.nombre = c.nuevoNombre;
+        }else if(c.nuevoNombre){
+          var alta = altas.find(function(x){ return x.c === c; });
+          state.miembros.push({ id: alta ? alta.id : uid('mb'), comisionId: comisionId, rolKey: c.rolKey, nombre: c.nuevoNombre, activo:true, desde:ahora, hasta:'', continuidad:'' });
+        }
+      });
+      rederivarRoles();
+      saveState();
     });
-    rederivarRoles();
-    saveState();
-    if(isRemote_()) fireAndWarn_('guardarMesa', Promise.all(writes));
-    return Promise.resolve();
   }
 
   // Upsert de nombre/tipo/fecha/oradores de una actividad ya existente.
   function saveTaller(tallerId, campos){
     var t = state.talleres.find(function(x){ return x.id === tallerId; });
-    if(!t) return Promise.resolve(null);
-    t.nombre = campos.nombre;
-    t.tipo = campos.tipo;
-    t.fecha = campos.fecha;
-    t.oradores = campos.oradores;
-    saveState();
-    if(isRemote_()) fireAndWarn_('saveTaller', supa.from('talleres').update({ nombre:campos.nombre, tipo:campos.tipo, fecha:campos.fecha, oradores:campos.oradores }).eq('id', tallerId));
-    return Promise.resolve(t);
+    if(!t) return Promise.reject(new Error('La actividad ya no existe.'));
+    return escribir_('saveTaller', function(){
+      return conFilas_(supa.from('talleres').update({ nombre:campos.nombre, tipo:campos.tipo, fecha:campos.fecha, oradores:campos.oradores }).eq('id', tallerId));
+    }).then(function(){
+      t.nombre = campos.nombre;
+      t.tipo = campos.tipo;
+      t.fecha = campos.fecha;
+      t.oradores = campos.oradores;
+      saveState();
+      return t;
+    });
   }
 
   // Inserta una actividad en blanco para la comisión dada.
   function crearTaller(comisionId){
     var t = { id: uid('tal'), comisionId: comisionId, nombre:'Nueva actividad', fecha:'', oradores:[], tipo:'taller', cerrada:false };
-    state.talleres.push(t);
-    saveState();
-    if(isRemote_()) fireAndWarn_('crearTaller', supa.from('talleres').insert({ id:t.id, comision_id:comisionId, nombre:t.nombre, tipo:t.tipo, fecha:'', oradores:[] }));
-    return Promise.resolve(t);
+    return escribir_('crearTaller', function(){
+      return supa.from('talleres').insert({ id:t.id, comision_id:comisionId, nombre:t.nombre, tipo:t.tipo, fecha:'', oradores:[] });
+    }).then(function(){
+      state.talleres.push(t);
+      saveState();
+      return t;
+    });
   }
 
   // Único hard-delete de toda la app: borra la actividad Y sus evaluaciones
@@ -219,21 +337,26 @@ var dataService = (function(){
   // ya no existe). En Supabase esto lo hace solo el "on delete cascade" de
   // evaluaciones.taller_id — basta con borrar el taller.
   function eliminarTaller(tallerId){
-    state.talleres = state.talleres.filter(function(x){ return x.id !== tallerId; });
-    state.evaluaciones = state.evaluaciones.filter(function(ev){ return ev.tallerId !== tallerId; });
-    saveState();
-    if(isRemote_()) fireAndWarn_('eliminarTaller', supa.from('talleres').delete().eq('id', tallerId));
-    return Promise.resolve();
+    return escribir_('eliminarTaller', function(){
+      return conFilas_(supa.from('talleres').delete().eq('id', tallerId));
+    }).then(function(){
+      state.talleres = state.talleres.filter(function(x){ return x.id !== tallerId; });
+      state.evaluaciones = state.evaluaciones.filter(function(ev){ return ev.tallerId !== tallerId; });
+      saveState();
+    });
   }
 
   // Alterna si una actividad admite más evaluaciones ("cerrada").
   function setTallerCerrada(tallerId, cerrada){
     var t = state.talleres.find(function(x){ return x.id === tallerId; });
-    if(!t) return Promise.resolve(null);
-    t.cerrada = cerrada;
-    saveState();
-    if(isRemote_()) fireAndWarn_('setTallerCerrada', supa.from('talleres').update({ cerrada:cerrada }).eq('id', tallerId));
-    return Promise.resolve(t);
+    if(!t) return Promise.reject(new Error('La actividad ya no existe.'));
+    return escribir_('setTallerCerrada', function(){
+      return conFilas_(supa.from('talleres').update({ cerrada:cerrada }).eq('id', tallerId));
+    }).then(function(){
+      t.cerrada = cerrada;
+      saveState();
+      return t;
+    });
   }
 
   // Upsert de una evaluación de rúbrica, identificada por (comisionId,
@@ -243,35 +366,37 @@ var dataService = (function(){
     var existing = state.evaluaciones.find(function(e){
       return e.comisionId === data.comisionId && e.tallerId === data.tallerId && e.miembroId === data.miembroId;
     });
-    if(existing){
-      existing.respuestas = data.respuestas;
-      existing.comentarios = data.comentarios;
-      existing.puntosDim = data.puntosDim;
-      existing.puntajeA = data.puntajeA;
-      existing.puntajeTotal = data.puntajeTotal;
-      existing.rol = data.rol;
-      existing.nombreMiembro = data.nombreMiembro;
-      existing.actualizado = new Date().toISOString();
-    }else{
-      existing = {
-        id: uid('ev'), comisionId: data.comisionId, tallerId: data.tallerId, miembroId: data.miembroId,
-        rol: data.rol, nombreMiembro: data.nombreMiembro,
-        respuestas: data.respuestas, comentarios: data.comentarios, puntosDim: data.puntosDim,
-        puntajeA: data.puntajeA, puntajeTotal: data.puntajeTotal,
-        actualizado: new Date().toISOString()
-      };
-      state.evaluaciones.push(existing);
-    }
-    saveState();
-    if(isRemote_()){
-      fireAndWarn_('guardarEvaluacion', supa.from('evaluaciones').upsert({
-        id: existing.id, comision_id: data.comisionId, taller_id: data.tallerId, miembro_id: data.miembroId,
+    var id = existing ? existing.id : uid('ev');
+    var actualizado = new Date().toISOString();
+    return escribir_('guardarEvaluacion', function(){
+      return supa.from('evaluaciones').upsert({
+        id: id, comision_id: data.comisionId, taller_id: data.tallerId, miembro_id: data.miembroId,
         rol: data.rol, nombre_miembro: data.nombreMiembro,
         respuestas: data.respuestas, comentarios: data.comentarios, puntos_dim: data.puntosDim,
-        puntaje_a: data.puntajeA, puntaje_total: data.puntajeTotal, actualizado: existing.actualizado
-      }, { onConflict: 'comision_id,taller_id,miembro_id' }));
-    }
-    return Promise.resolve(existing);
+        puntaje_a: data.puntajeA, puntaje_total: data.puntajeTotal, actualizado: actualizado
+      }, { onConflict: 'comision_id,taller_id,miembro_id' });
+    }).then(function(){
+      if(existing){
+        existing.respuestas = data.respuestas;
+        existing.comentarios = data.comentarios;
+        existing.puntosDim = data.puntosDim;
+        existing.puntajeA = data.puntajeA;
+        existing.puntajeTotal = data.puntajeTotal;
+        existing.rol = data.rol;
+        existing.nombreMiembro = data.nombreMiembro;
+        existing.actualizado = actualizado;
+      }else{
+        existing = {
+          id: id, comisionId: data.comisionId, tallerId: data.tallerId, miembroId: data.miembroId,
+          rol: data.rol, nombreMiembro: data.nombreMiembro,
+          respuestas: data.respuestas, comentarios: data.comentarios, puntosDim: data.puntosDim,
+          puntajeA: data.puntajeA, puntajeTotal: data.puntajeTotal, actualizado: actualizado
+        };
+        state.evaluaciones.push(existing);
+      }
+      saveState();
+      return existing;
+    });
   }
 
   // Upsert de un corte de seguimiento, identificado por (miembroId,
@@ -281,67 +406,82 @@ var dataService = (function(){
   // anterior del SG queda obsoleta.
   function guardarCorte(data){
     var existing = state.cortes.find(function(c){ return c.miembroId === data.miembroId && c.corteKey === data.corteKey; });
+    var id = existing ? existing.id : uid('corte');
     var ahora = new Date().toISOString();
-    if(existing){
-      existing.comentario = data.comentario;
-      existing.semaforoAlMomento = data.semaforoAlMomento;
-      existing.promedioAlMomento = data.promedioAlMomento;
-      existing.requiereRevision = data.requiereRevision;
-      existing.fecha = ahora;
-      existing.decisionSga = { estado:'pendiente', comentario:'', fecha:'' };
-    }else{
-      existing = {
-        id: uid('corte'), comisionId: data.comisionId, miembroId: data.miembroId, rolKey: data.rolKey, corteKey: data.corteKey,
-        comentario: data.comentario,
-        semaforoAlMomento: data.semaforoAlMomento, promedioAlMomento: data.promedioAlMomento,
-        requiereRevision: data.requiereRevision, fecha: ahora,
-        decisionSga: { estado:'pendiente', comentario:'', fecha:'' }
-      };
-      state.cortes.push(existing);
-    }
-    saveState();
-    if(isRemote_()){
-      fireAndWarn_('guardarCorte', supa.from('cortes').upsert({
-        id: existing.id, comision_id: data.comisionId, miembro_id: data.miembroId, rol_key: data.rolKey, corte_key: data.corteKey,
+    return escribir_('guardarCorte', function(){
+      return supa.from('cortes').upsert({
+        id: id, comision_id: data.comisionId, miembro_id: data.miembroId, rol_key: data.rolKey, corte_key: data.corteKey,
         comentario: data.comentario, semaforo_al_momento: data.semaforoAlMomento, promedio_al_momento: data.promedioAlMomento,
         requiere_revision: data.requiereRevision, fecha: ahora,
         decision_estado: 'pendiente', decision_comentario: '', decision_fecha: null
-      }, { onConflict: 'miembro_id,corte_key' }));
-    }
-    return Promise.resolve(existing);
+      }, { onConflict: 'miembro_id,corte_key' });
+    }).then(function(){
+      if(existing){
+        existing.comentario = data.comentario;
+        existing.semaforoAlMomento = data.semaforoAlMomento;
+        existing.promedioAlMomento = data.promedioAlMomento;
+        existing.requiereRevision = data.requiereRevision;
+        existing.fecha = ahora;
+        existing.decisionSga = { estado:'pendiente', comentario:'', fecha:'' };
+      }else{
+        existing = {
+          id: id, comisionId: data.comisionId, miembroId: data.miembroId, rolKey: data.rolKey, corteKey: data.corteKey,
+          comentario: data.comentario,
+          semaforoAlMomento: data.semaforoAlMomento, promedioAlMomento: data.promedioAlMomento,
+          requiereRevision: data.requiereRevision, fecha: ahora,
+          decisionSga: { estado:'pendiente', comentario:'', fecha:'' }
+        };
+        state.cortes.push(existing);
+      }
+      saveState();
+      return existing;
+    });
   }
 
   // Decisión del Secretario General sobre un corte — TOCA DOS REGISTROS A
   // LA VEZ (el corte y la continuidad del miembro); no es una transacción
-  // real (ver SUPABASE.md), pero las dos escrituras se disparan juntas.
+  // real (ver SUPABASE.md). Si la segunda escritura falla, el corte ya
+  // quedó decidido en el servidor: el error se reporta igual y reintentar
+  // es seguro (ambas son idempotentes).
   function decidirCorte(corteId, estado){
     var rec = state.cortes.find(function(c){ return c.id === corteId; });
-    if(!rec) return Promise.resolve(null);
-    rec.decisionSga = { estado: estado, comentario:'', fecha: new Date().toISOString() };
+    if(!rec) return Promise.reject(new Error('El corte ya no existe.'));
     var miembro = miembroPorId(rec.miembroId);
-    if(miembro) miembro.continuidad = estado;
-    saveState();
-    if(isRemote_()){
-      var p = supa.from('cortes').update({ decision_estado: estado, decision_comentario:'', decision_fecha: rec.decisionSga.fecha }).eq('id', corteId)
-        .then(function(){ return miembro ? supa.from('miembros').update({ continuidad: estado }).eq('id', miembro.id) : null; });
-      fireAndWarn_('decidirCorte', p);
-    }
-    return Promise.resolve(rec);
+    var fecha = new Date().toISOString();
+    return escribir_('decidirCorte', function(){
+      return conFilas_(supa.from('cortes').update({ decision_estado: estado, decision_comentario:'', decision_fecha: fecha }).eq('id', corteId)).then(function(r){
+        if(r.error || !miembro) return r;
+        return conFilas_(supa.from('miembros').update({ continuidad: estado }).eq('id', miembro.id));
+      });
+    }).then(function(){
+      rec.decisionSga = { estado: estado, comentario:'', fecha: fecha };
+      if(miembro) miembro.continuidad = estado;
+      saveState();
+      return rec;
+    });
   }
 
   // Fecha de inicio de una fase de corte (configuración global, la fija la
   // Subsecretaría desde el modal "Fases de los cortes").
   function saveConfigCorte(corteKey, inicio){
-    if(!state.configCortes[corteKey]) state.configCortes[corteKey] = { inicio:'' };
-    state.configCortes[corteKey].inicio = inicio;
-    saveState();
-    if(isRemote_()) fireAndWarn_('saveConfigCorte', supa.from('config_cortes').update({ inicio:inicio }).eq('key', corteKey));
-    return Promise.resolve();
+    return escribir_('saveConfigCorte', function(){
+      return supa.from('config_cortes').update({ inicio:inicio }).eq('key', corteKey).select('key').then(function(r){
+        if(!r.error && (!r.data || r.data.length === 0)) r.error = { message: 'config_cortes: 0 filas' };
+        return r;
+      });
+    }).then(function(){
+      if(!state.configCortes[corteKey]) state.configCortes[corteKey] = { inicio:'' };
+      state.configCortes[corteKey].inicio = inicio;
+      saveState();
+    });
   }
 
   return {
     init: init,
+    obtenerSesion: obtenerSesion,
     login: login,
+    cambiarContrasena: cambiarContrasena,
+    logout: logout,
     sustituirMiembro: sustituirMiembro,
     guardarMesa: guardarMesa,
     saveTaller: saveTaller,

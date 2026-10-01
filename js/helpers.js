@@ -128,6 +128,39 @@
     }, 2600);
   }
 
+  // Envuelve una escritura de dataService (que devuelve una promesa que
+  // solo resuelve cuando el servidor confirmó, ver data-service.js):
+  // deshabilita `btn` y cambia su texto a "Guardando…" mientras dura, y
+  // si falla muestra el error en un toast y rechaza — así quien llama
+  // puede encadenar .then() para lo que solo debe pasar tras guardar
+  // (limpiar el estado "con cambios", re-renderizar, toast de éxito) y el
+  // formulario conserva lo que el usuario escribió si no se guardó.
+  // `btn` puede ser null (p. ej. un <input type=date> que guarda al
+  // cambiar): se deshabilita igual si es un control de formulario.
+  function conGuardado_(btn, promesa){
+    var textoOriginal = btn ? btn.textContent : '';
+    var esBoton = btn && btn.tagName === 'BUTTON';
+    if(btn){
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      if(esBoton) btn.textContent = 'Guardando…';
+    }
+    function restaurar(){
+      if(!btn || !btn.isConnected) return; // el re-render ya lo reemplazó
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+      if(esBoton) btn.textContent = textoOriginal;
+    }
+    return promesa.then(function(res){ restaurar(); return res; }, function(err){
+      restaurar();
+      toast(err && err.message ? err.message : 'No se pudo guardar. Inténtalo de nuevo.', 'error');
+      throw err;
+    });
+  }
+  // Para los .then() donde el rechazo ya se avisó con conGuardado_ — evita
+  // un "Uncaught (in promise)" en la consola sin tragarse errores reales.
+  function ignorarRechazo_(){}
+
   function updateHeaderCounter(){
     // No vive en index.html (login) — ver la nota de on_() en main.js.
     var el = document.getElementById('header-counter');

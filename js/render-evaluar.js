@@ -235,18 +235,20 @@
     }
     var puntajeA = calcPuntajeA(currentRespuestas);
     var puntajeTotal = computePuntaje(currentRespuestas, currentPuntosDim);
-    dataService.guardarEvaluacion({
+    var btn = document.getElementById('btn-guardar-evaluacion');
+    conGuardado_(btn, dataService.guardarEvaluacion({
       comisionId: com.id, tallerId: selTaller, miembroId: selMiembroId,
       rol: miembro.rolKey, nombreMiembro: miembro.nombre,
       respuestas: Object.assign({}, currentRespuestas),
       comentarios: Object.assign({}, currentComentarios),
       puntosDim: Object.assign({}, currentPuntosDim),
       puntajeA: puntajeA, puntajeTotal: puntajeTotal
-    });
-    clearDirty('evaluar');
-    updateHeaderCounter();
-    toast('Evaluación guardada — ' + puntajeTotal + '/100');
-    renderRubrica(com);
+    })).then(function(){
+      clearDirty('evaluar');
+      updateHeaderCounter();
+      toast('Evaluación guardada — ' + puntajeTotal + '/100');
+      renderRubrica(com);
+    }, ignorarRechazo_);
   }
 
   /* ---------- Cortes ----------
@@ -349,16 +351,18 @@
       if(textarea) textarea.focus();
       return;
     }
-    dataService.guardarCorte({
+    var btn = document.getElementById('btn-guardar-corte');
+    conGuardado_(btn, dataService.guardarCorte({
       comisionId: com.id, miembroId: selMiembroId, rolKey: miembro.rolKey, corteKey: selCorteTipo,
       comentario: currentCorteComentario.trim(),
       semaforoAlMomento: estado.key, promedioAlMomento: estado.promedio,
       requiereRevision: requiereComentario
-    });
-    clearDirty('cortes');
-    updateHeaderCounter();
-    toast(requiereComentario ? 'Corte guardado — pasa a revisión del Secretario General' : 'Corte guardado');
-    renderCorteCheckpoint(com);
+    })).then(function(){
+      clearDirty('cortes');
+      updateHeaderCounter();
+      toast(requiereComentario ? 'Corte guardado — pasa a revisión del Secretario General' : 'Corte guardado');
+      renderCorteCheckpoint(com);
+    }, ignorarRechazo_);
   }
 
   /* ---------- Histórico de voluntario ----------

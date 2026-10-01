@@ -143,6 +143,23 @@
           Entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
         </button>
       </form>
+
+      <!-- Primer ingreso: la cuenta viene con una contraseña temporal y el
+           servidor no entrega datos hasta que se cambie (ver app_rol() en
+           supabase/migrations). Lo muestra render-login.js. -->
+      <form class="access-card login-form" id="cambio-form" novalidate hidden>
+        <p class="login-desc" id="cambio-form-intro" style="margin-top:0;">Es tu primer ingreso: elige una contraseña nueva para tu cuenta. Mínimo 8 caracteres.</p>
+        <label class="role-field">
+          <span class="role-label">Contraseña nueva</span>
+          <input type="password" class="field-input" id="cambio-nueva" autocomplete="new-password" minlength="8" required>
+        </label>
+        <label class="role-field">
+          <span class="role-label">Repite la contraseña nueva</span>
+          <input type="password" class="field-input" id="cambio-repetir" autocomplete="new-password" minlength="8" required>
+        </label>
+        <p class="login-form-error" id="cambio-form-error" role="alert" hidden></p>
+        <button type="submit" class="btn btn-primary login-form-submit" id="cambio-form-submit">Guardar contraseña y entrar</button>
+      </form>
     </div>
   </section>
 </main>
