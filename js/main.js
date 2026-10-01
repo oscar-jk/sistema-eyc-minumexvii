@@ -230,10 +230,6 @@
     // aunque ya haya sesión guardada, para que "← Volver" tenga a dónde
     // volver de verdad en vez de rebotar para adelante otra vez).
     var esPaginaDeRol = typeof EXPECTED_ROLE !== 'undefined';
-    if(esPaginaDeRol && (!session || session.role !== EXPECTED_ROLE)){
-      location.href = 'index.html';
-      return;
-    }
     initTheme();
     updateFooterPrivacyNote();
     bindLoginFormEvents();
@@ -244,7 +240,23 @@
     });
     // El login no muestra datos de comisiones: no tiene sentido cargar
     // todas las tablas ahí (ni bloquear el login si esa carga falla).
-    if(esPaginaDeRol) cargarDatosYEntrar_();
+    if(esPaginaDeRol) verificarSesionYEntrar_();
+  }
+
+  // La identidad sale del JWT de Supabase Auth, no de localStorage. Esta
+  // guarda solo decide qué PÁGINA mostrar — aunque alguien la saltara
+  // desde la consola, sin un JWT válido con el rol correcto RLS no le
+  // devuelve ningún dato.
+  function verificarSesionYEntrar_(){
+    dataService.obtenerSesion().then(function(s){
+      if(!s){ location.href = 'index.html'; return; }
+      if(s.debeCambiarContrasena){ location.href = 'index.html?cambiar=1'; return; }
+      if(s.role !== EXPECTED_ROLE){ location.href = ROLE_PAGES[s.role] || 'index.html'; return; }
+      session = s;
+      cargarDatosYEntrar_();
+    }, function(){
+      mostrarErrorCarga_(verificarSesionYEntrar_);
+    });
   }
 
   document.addEventListener('DOMContentLoaded', init);

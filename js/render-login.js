@@ -7,10 +7,10 @@
   // resto del código — solo el archivo se llama sga.html.
   var ROLE_PAGES = { eyc:'eyc.html', subse:'subse.html', sg:'sga.html' };
 
-  function doLogin(role, comisionId){
-    session = { role: role, comisionId: comisionId || null };
-    saveSession();
-    location.href = ROLE_PAGES[role];
+  // La sesión ya quedó guardada por supabase-js (ver dataService.login());
+  // acá solo se elige a qué página ir.
+  function irAPaginaDeRol(s){
+    location.href = ROLE_PAGES[s.role] || 'index.html';
   }
 
   function doLogout(){
@@ -18,8 +18,7 @@
     confirmDiscardIfDirty(function(){
       showConfirmModal('Cerrar sesión', '¿Seguro que quieres cerrar sesión?', 'Cerrar sesión', function(){
         session = null;
-        try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
-        location.href = 'index.html';
+        dataService.logout().then(function(){ location.href = 'index.html'; });
       });
     });
   }
@@ -52,9 +51,54 @@
   // EyC, a qué comisión) entra; ya no se elige a mano. Sin
   // CONFIG.SUPABASE_URL configurado no hay contra qué validar, ver el
   // mensaje que devuelve dataService.login().
+  // Primer ingreso: reemplaza el formulario de login por el de cambio de
+  // contraseña. Hasta completarlo, el servidor no entrega datos (app_rol()
+  // devuelve null mientras debe_cambiar_contrasena esté activo).
+  function mostrarCambioContrasena(){
+    var loginForm = document.getElementById('login-form');
+    var cambioForm = document.getElementById('cambio-form');
+    if(loginForm) loginForm.hidden = true;
+    cambioForm.hidden = false;
+    document.getElementById('cambio-nueva').focus();
+  }
+
+  function bindCambioContrasenaEvents(){
+    var form = document.getElementById('cambio-form');
+    if(!form) return;
+    var nueva = document.getElementById('cambio-nueva');
+    var repetir = document.getElementById('cambio-repetir');
+    var errorEl = document.getElementById('cambio-form-error');
+    var submitBtn = document.getElementById('cambio-form-submit');
+    function mostrarError(msg){ errorEl.textContent = msg; errorEl.hidden = false; }
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      errorEl.hidden = true;
+      if(nueva.value.length < 8){ mostrarError('La contraseña debe tener al menos 8 caracteres.'); nueva.focus(); return; }
+      if(nueva.value !== repetir.value){ mostrarError('Las dos contraseñas no coinciden.'); repetir.focus(); return; }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Guardando…';
+      dataService.cambiarContrasena(nueva.value).then(function(s){
+        if(!s || s.debeCambiarContrasena) throw new Error('No se pudo confirmar el cambio. Inténtalo de nuevo.');
+        irAPaginaDeRol(s);
+      }).catch(function(err){
+        mostrarError(err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Guardar contraseña y entrar';
+      });
+    });
+  }
+
   function bindLoginFormEvents(){
+    bindCambioContrasenaEvents();
     var form = document.getElementById('login-form');
     if(!form) return; // solo existe en index.html
+    // Llegó redirigido desde una página de rol con una cuenta que todavía
+    // tiene la contraseña temporal (ver init() en main.js).
+    if(/[?&]cambiar=1\b/.test(location.search)){
+      dataService.obtenerSesion().then(function(s){
+        if(s && s.debeCambiarContrasena) mostrarCambioContrasena();
+      }, function(){});
+    }
     var usuarioInput = document.getElementById('login-usuario');
     var contrasenaInput = document.getElementById('login-contrasena');
     var errorEl = document.getElementById('login-form-error');
@@ -65,8 +109,9 @@
       errorEl.hidden = true;
       submitBtn.disabled = true;
       dataService.login(usuarioInput.value.trim(), contrasenaInput.value)
-        .then(function(res){
-          doLogin(res.rol, res.comisionId);
+        .then(function(s){
+          if(s.debeCambiarContrasena){ submitBtn.disabled = false; mostrarCambioContrasena(); return; }
+          irAPaginaDeRol(s);
         })
         .catch(function(err){
           errorEl.textContent = err.message;

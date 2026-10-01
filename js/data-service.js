@@ -15,8 +15,14 @@
 
    Los "getters" (state.talleres.filter(...), miembroActivo(...), etc.) NO
    pasan por acá — siguen leyendo `state` directo y síncrono, como siempre.
-   Solo init(), login() y los métodos mutadores de abajo hablan con el
-   backend.
+   Solo init(), la autenticación y los métodos mutadores de abajo hablan
+   con el backend.
+
+   Autenticación: Supabase Auth. supabase-js guarda el JWT en
+   localStorage y lo renueva solo; cada consulta viaja con él y las
+   políticas RLS deciden qué puede leer/escribir cada rol (ver
+   supabase/migrations). Rol y comisión van en app_metadata del usuario,
+   que el cliente no puede modificar.
 
    Nombres de columna: Postgres usa snake_case (comision_id, rol_key...),
    el resto del sitio usa camelCase (comisionId, rolKey...) — las funciones
@@ -31,6 +37,19 @@ var dataService = (function(){
   }
 
   var MSG_ERROR_GUARDADO = 'No se pudo guardar en el servidor. Tus cambios siguen en pantalla — revisa tu conexión e inténtalo de nuevo.';
+
+  // UPDATE/DELETE que RLS no permite (o sobre una fila que ya no existe)
+  // NO devuelven error en PostgREST: simplemente afectan 0 filas. Sin esta
+  // revisión, la UI diría "guardado" cuando no se guardó nada. Exige
+  // .select() en la consulta para que el servidor devuelva las filas.
+  function conFilas_(consulta){
+    return consulta.select('id').then(function(r){
+      if(!r.error && (!r.data || r.data.length === 0)){
+        r.error = { message: 'La escritura no afectó ninguna fila (sin permiso o registro inexistente).' };
+      }
+      return r;
+    });
+  }
 
   // Ejecuta una escritura contra Supabase y espera la confirmación. `fn`
   // devuelve una promesa de supabase-js (o un arreglo/cadena de ellas
@@ -128,31 +147,101 @@ var dataService = (function(){
     });
   }
 
-  // Autenticación por usuario/contraseña vía la función login() de
-  // Postgres (SECURITY DEFINER — valida contra usuarios.contrasena_hash
-  // sin exponer esa tabla directo, ver SUPABASE.md). Sin Supabase
-  // configurado no hay contra qué validar cuentas.
+  /* ---------- Autenticación (Supabase Auth) ---------- */
+
+  function emailDeUsuario_(usuario){
+    return String(usuario || '').trim().toLowerCase() + '@' + CONFIG.AUTH_EMAIL_DOMAIN;
+  }
+
+  // Traduce la sesión de Supabase Auth al objeto `session` que usa el
+  // resto del sitio. app_metadata solo lo escribe el servidor (ver
+  // supabase/scripts/crear_cuentas.sql).
+  function sesionDesdeAuth_(authSession){
+    if(!authSession || !authSession.user) return null;
+    var meta = authSession.user.app_metadata || {};
+    if(!meta.rol) return null;
+    return {
+      role: meta.rol,
+      comisionId: meta.comision_id || null,
+      debeCambiarContrasena: meta.debe_cambiar_contrasena === true
+    };
+  }
+
+  function sinConexion_(){
+    return new Error('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.');
+  }
+
+  // Sesión vigente de este navegador (o null si no hay). Rechaza solo si
+  // supabase-js no cargó o falla la red al renovar el token.
+  function obtenerSesion(){
+    return Promise.resolve().then(function(){
+      if(!isRemote_()) return null; // sin Supabase no hay cuentas
+      return supa.auth.getSession().then(function(res){
+        if(res.error) throw res.error;
+        return sesionDesdeAuth_(res.data.session);
+      });
+    }).catch(function(err){
+      console.error('[dataService] obtenerSesion:', err);
+      throw sinConexion_();
+    });
+  }
+
+  // Login por usuario/contraseña. Supabase Auth limita los intentos por IP
+  // (responde 429), algo que la función login() anterior no hacía.
   function login(usuario, contrasena){
     var remoto;
-    try{ remoto = isRemote_(); }catch(e){
-      console.error('[dataService] login: supabase-js no cargó', e);
-      return Promise.reject(new Error('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.'));
+    try{ remoto = isRemote_(); }catch(err){
+      console.error('[dataService] login: supabase-js no cargó', err);
+      return Promise.reject(sinConexion_());
     }
     if(!remoto){
       console.error('[dataService] login: falta CONFIG.SUPABASE_URL/SUPABASE_ANON_KEY en js/config.js.');
       return Promise.reject(new Error('No se pudo conectar con el sistema. Contacta al administrador.'));
     }
-    return supa.rpc('login', { p_usuario: usuario, p_contrasena: contrasena }).then(function(res){
+    return supa.auth.signInWithPassword({ email: emailDeUsuario_(usuario), password: contrasena }).then(function(res){
       if(res.error){
         console.error('[dataService] login:', res.error);
+        if(res.error.status === 400 || res.error.code === 'invalid_credentials') throw new Error('Usuario o contraseña incorrectos.');
+        if(res.error.status === 429) throw new Error('Demasiados intentos. Espera unos minutos e inténtalo de nuevo.');
+        if(!res.error.status) throw sinConexion_();
         throw new Error('No se pudo iniciar sesión. Inténtalo de nuevo en unos minutos.');
       }
-      var row = res.data && res.data[0];
-      if(!row) throw new Error('Usuario o contraseña incorrectos.');
-      return { rol: row.rol, comisionId: row.comision_id };
-    }, function(err){
-      console.error('[dataService] login (red):', err);
-      throw new Error('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.');
+      var s = sesionDesdeAuth_(res.data.session);
+      if(!s){
+        supa.auth.signOut();
+        throw new Error('Esta cuenta no tiene un rol asignado. Contacta a la Subsecretaría.');
+      }
+      return s;
+    });
+  }
+
+  // Cambio de contraseña (obligatorio en el primer ingreso). Un trigger en
+  // auth.users quita debe_cambiar_contrasena al cambiar el hash; el
+  // refreshSession() trae un JWT nuevo sin ese flag, que es el que RLS
+  // exige para dar acceso a los datos.
+  function cambiarContrasena(nueva){
+    return supa.auth.updateUser({ password: nueva }).then(function(res){
+      if(res.error){
+        console.error('[dataService] cambiarContrasena:', res.error);
+        if(res.error.code === 'same_password') throw new Error('La contraseña nueva debe ser distinta de la temporal.');
+        if(res.error.code === 'weak_password') throw new Error('Esa contraseña es demasiado débil. Usa al menos 8 caracteres, mezclando letras y números.');
+        if(!res.error.status) throw sinConexion_();
+        throw new Error('No se pudo cambiar la contraseña. Inténtalo de nuevo.');
+      }
+      return supa.auth.refreshSession();
+    }).then(function(res){
+      if(res.error) throw sinConexion_();
+      return sesionDesdeAuth_(res.data.session);
+    });
+  }
+
+  // Cierra la sesión en el servidor (revoca el refresh token) y borra el
+  // JWT local. Si la red falla, supabase-js igual borra la sesión local.
+  function logout(){
+    return Promise.resolve().then(function(){
+      if(isRemote_()) return supa.auth.signOut();
+    }).catch(function(err){
+      console.error('[dataService] logout:', err);
     });
   }
 
@@ -168,7 +257,7 @@ var dataService = (function(){
     return escribir_('sustituirMiembro', function(){
       var alta = function(){ return supa.from('miembros').insert({ id:nuevo.id, comision_id:comisionId, rol_key:rolKey, nombre:nombre, desde:ahora }); };
       if(!actual) return alta();
-      return supa.from('miembros').update({ activo:false, hasta:ahora }).eq('id', actual.id).then(function(r){
+      return conFilas_(supa.from('miembros').update({ activo:false, hasta:ahora }).eq('id', actual.id)).then(function(r){
         if(r.error) return r; // no se da de alta al nuevo si la baja falló
         return alta();
       });
@@ -190,8 +279,8 @@ var dataService = (function(){
     return escribir_('guardarMesa', function(){
       return Promise.all(cambios.map(function(c){
         if(c.miembro){
-          if(!c.nuevoNombre) return supa.from('miembros').update({ activo:false, hasta:ahora }).eq('id', c.miembro.id);
-          return supa.from('miembros').update({ nombre:c.nuevoNombre }).eq('id', c.miembro.id);
+          if(!c.nuevoNombre) return conFilas_(supa.from('miembros').update({ activo:false, hasta:ahora }).eq('id', c.miembro.id));
+          return conFilas_(supa.from('miembros').update({ nombre:c.nuevoNombre }).eq('id', c.miembro.id));
         }
         if(c.nuevoNombre){
           var id = uid('mb');
@@ -220,7 +309,7 @@ var dataService = (function(){
     var t = state.talleres.find(function(x){ return x.id === tallerId; });
     if(!t) return Promise.reject(new Error('La actividad ya no existe.'));
     return escribir_('saveTaller', function(){
-      return supa.from('talleres').update({ nombre:campos.nombre, tipo:campos.tipo, fecha:campos.fecha, oradores:campos.oradores }).eq('id', tallerId);
+      return conFilas_(supa.from('talleres').update({ nombre:campos.nombre, tipo:campos.tipo, fecha:campos.fecha, oradores:campos.oradores }).eq('id', tallerId));
     }).then(function(){
       t.nombre = campos.nombre;
       t.tipo = campos.tipo;
@@ -249,7 +338,7 @@ var dataService = (function(){
   // evaluaciones.taller_id — basta con borrar el taller.
   function eliminarTaller(tallerId){
     return escribir_('eliminarTaller', function(){
-      return supa.from('talleres').delete().eq('id', tallerId);
+      return conFilas_(supa.from('talleres').delete().eq('id', tallerId));
     }).then(function(){
       state.talleres = state.talleres.filter(function(x){ return x.id !== tallerId; });
       state.evaluaciones = state.evaluaciones.filter(function(ev){ return ev.tallerId !== tallerId; });
@@ -262,7 +351,7 @@ var dataService = (function(){
     var t = state.talleres.find(function(x){ return x.id === tallerId; });
     if(!t) return Promise.reject(new Error('La actividad ya no existe.'));
     return escribir_('setTallerCerrada', function(){
-      return supa.from('talleres').update({ cerrada:cerrada }).eq('id', tallerId);
+      return conFilas_(supa.from('talleres').update({ cerrada:cerrada }).eq('id', tallerId));
     }).then(function(){
       t.cerrada = cerrada;
       saveState();
@@ -360,9 +449,9 @@ var dataService = (function(){
     var miembro = miembroPorId(rec.miembroId);
     var fecha = new Date().toISOString();
     return escribir_('decidirCorte', function(){
-      return supa.from('cortes').update({ decision_estado: estado, decision_comentario:'', decision_fecha: fecha }).eq('id', corteId).then(function(r){
+      return conFilas_(supa.from('cortes').update({ decision_estado: estado, decision_comentario:'', decision_fecha: fecha }).eq('id', corteId)).then(function(r){
         if(r.error || !miembro) return r;
-        return supa.from('miembros').update({ continuidad: estado }).eq('id', miembro.id);
+        return conFilas_(supa.from('miembros').update({ continuidad: estado }).eq('id', miembro.id));
       });
     }).then(function(){
       rec.decisionSga = { estado: estado, comentario:'', fecha: fecha };
@@ -376,7 +465,10 @@ var dataService = (function(){
   // Subsecretaría desde el modal "Fases de los cortes").
   function saveConfigCorte(corteKey, inicio){
     return escribir_('saveConfigCorte', function(){
-      return supa.from('config_cortes').update({ inicio:inicio }).eq('key', corteKey);
+      return supa.from('config_cortes').update({ inicio:inicio }).eq('key', corteKey).select('key').then(function(r){
+        if(!r.error && (!r.data || r.data.length === 0)) r.error = { message: 'config_cortes: 0 filas' };
+        return r;
+      });
     }).then(function(){
       if(!state.configCortes[corteKey]) state.configCortes[corteKey] = { inicio:'' };
       state.configCortes[corteKey].inicio = inicio;
@@ -386,7 +478,10 @@ var dataService = (function(){
 
   return {
     init: init,
+    obtenerSesion: obtenerSesion,
     login: login,
+    cambiarContrasena: cambiarContrasena,
+    logout: logout,
     sustituirMiembro: sustituirMiembro,
     guardarMesa: guardarMesa,
     saveTaller: saveTaller,

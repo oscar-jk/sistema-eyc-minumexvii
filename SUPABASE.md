@@ -15,7 +15,7 @@ armado, no un paso a paso pendiente.
 
 ## Cómo está armado
 
-Una tabla por colección de `state.js`, más `usuarios` para el login:
+Una tabla por colección de `state.js` (las cuentas viven en Supabase Auth, ver abajo):
 
 | Tabla | Columnas |
 |---|---|
@@ -25,59 +25,82 @@ Una tabla por colección de `state.js`, más `usuarios` para el login:
 | `evaluaciones` | `id` (uuid), `comision_id`/`taller_id`/`miembro_id` (fk), `rol`, `nombre_miembro`, `respuestas`/`comentarios`/`puntos_dim` (jsonb), `puntaje_a`, `puntaje_total`, `actualizado`. Único por (`comision_id`,`taller_id`,`miembro_id`). |
 | `cortes` | `id` (uuid), `comision_id`/`miembro_id` (fk), `rol_key`, `corte_key`, `comentario`, `semaforo_al_momento`, `promedio_al_momento`, `requiere_revision`, `fecha`, `decision_estado`/`decision_comentario`/`decision_fecha` (el `decisionSga` del sitio, aplanado). Único por (`miembro_id`,`corte_key`). |
 | `config_cortes` | `key` (pk: `corte1`/`corte2`/`final`), `inicio` |
-| `usuarios` | `id` (uuid), `usuario` (unique), `contrasena_hash`, `rol` (`eyc`\|`subse`\|`sg`), `comision_id` (fk, solo para `eyc`) |
+| ~~`usuarios`~~ | Esquema de login anterior (contraseña `1234` para todos). Se usa solo como fuente de `crear_cuentas.sql` y se **borra en la fase B** — las cuentas viven en `auth.users`. |
 
 `js/data-service.js` traduce entre el `snake_case` de Postgres y el
 `camelCase` que usa el resto del sitio (`comision_id` ↔ `comisionId`, etc.)
 — es la única frontera entre los dos, el resto del código no cambió.
 
-**Login (`js/render-login.js` → `dataService.login()`):** llama a una
-función de Postgres, `public.login(usuario, contrasena)`, que compara
-contra `contrasena_hash` con `pgcrypto` (hash real con `crypt()`/
-`gen_salt('bf')`, **no texto plano** — mejor que el intento anterior con
-Sheets). La función es `SECURITY DEFINER`, así puede leer
-`usuarios.contrasena_hash` aunque el rol público (`anon`) no tenga permiso
-directo sobre esa tabla — es la única puerta de entrada a `usuarios`.
+**Login: Supabase Auth.** Cada cuenta es un usuario de `auth.users` con
+email sintético `<usuario>@eyc-minume.invalid` (`CONFIG.AUTH_EMAIL_DOMAIN`
+en `js/config.js`; `.invalid` es un TLD reservado, nunca llega correo a
+nadie). En pantalla se sigue escribiendo solo el usuario (`ctd`, `sg`...).
+El rol y la comisión van en `app_metadata` (`rol`, `comision_id`), que solo
+el servidor puede escribir y que viaja dentro del JWT. supabase-js guarda
+la sesión en `localStorage` y renueva el token sola; lo que diga el
+navegador no da acceso a nada: cada consulta lleva el JWT y las políticas
+RLS deciden.
 
-**Cuentas genéricas para probar ahora, todas con contraseña `1234`:**
-`sg`, `subse`, y una por comisión de EyC con el usuario igual al `id` de
-su comisión (`ctd`, `pnud`, `cop`, ...) — lista completa más abajo.
-**Son para pruebas, no para el evento real** — antes de repartir acceso de
-verdad, cambien la contraseña de cada cuenta (y consideren dar una cuenta
-individual por persona en vez de una compartida por comisión). Se editan
-directo en la tabla `usuarios` desde el panel de Supabase (Table Editor),
-o con SQL:
-```sql
-update usuarios set contrasena_hash = crypt('la-nueva-contraseña', gen_salt('bf'))
-where usuario = 'ctd';
-```
-
-Lista completa de usuarios (contraseña `1234` en todos):
-
-| Usuario | Rol |
-|---|---|
-| `sg` | Secretario/a General |
-| `subse` | Subsecretario/a |
-| `ctd`, `pnud`, `cop`, `ams`, `csnu`, `onudc`, `cij`, `foro-social-drdh`, `onudi`, `unctad`, `omt`, `cime`, `oma`, `crpd`, `unesco-juventud-deporte` | EyC (uno por comisión, el usuario es el id de su comisión) |
+- **Primer ingreso:** las cuentas se crean con una contraseña temporal
+  única y `app_metadata.debe_cambiar_contrasena = true`. Mientras ese flag
+  esté activo, `public.app_rol()` devuelve `NULL` y RLS no entrega ningún
+  dato; el login muestra el formulario de contraseña nueva. Un trigger en
+  `auth.users` (`limpiar_flag_contrasena`) quita el flag en cuanto cambia
+  el hash.
+- **Crear las cuentas:** `supabase/scripts/crear_cuentas.sql`, una por cada
+  fila de la tabla vieja `usuarios`. Devuelve usuario + contraseña temporal
+  **una sola vez**; no se guarda en ningún lado.
+- **Resetear una contraseña olvidada:**
+  `supabase/scripts/resetear_contrasena.sql` (cambiar el usuario), desde el
+  SQL Editor. Genera una temporal nueva y vuelve a exigir el cambio.
+- **Agregar una cuenta nueva:** Authentication → Users → Add user, con
+  email `<usuario>@eyc-minume.invalid` y "Auto confirm"; después, en el
+  SQL Editor:
+  ```sql
+  update auth.users
+     set raw_app_meta_data = raw_app_meta_data
+         || '{"rol":"eyc","comision_id":"ctd","debe_cambiar_contrasena":true}'::jsonb
+   where email = 'nuevo@eyc-minume.invalid';
+  ```
+- **Registro público desactivado:** en Authentication → Sign In / Providers,
+  "Allow new users to sign up" debe estar **apagado**. Aunque alguien se
+  registrara, su cuenta no tendría `rol` y RLS no le daría nada, pero no
+  hay razón para permitirlo.
 
 ## Seguridad (RLS)
 
-- `comisiones`/`miembros`/`talleres`/`evaluaciones`/`cortes`/`config_cortes`:
-  RLS activo con una política abierta a lectura/escritura para el rol
-  `anon` (la llave pública). El sitio es estático sin sesión de servidor
-  propia, así que esto es el mismo nivel de "seguridad" que ya se venía
-  aceptando con el token compartido de Apps Script: frena a quien encuentre
-  la URL de casualidad, no a un atacante decidido — cualquiera con la
-  llave pública (que viaja en el JS del cliente, visible en las
-  herramientas de desarrollador) puede leer y escribir estas tablas
-  directo, sin pasar por el sitio.
-- `usuarios`: RLS activo **sin ninguna política** para `anon` — cero
-  acceso directo. Solo `login()` (que corre con privilegios propios, no
-  los de `anon`) puede leerla. Las contraseñas están hasheadas, así que
-  aunque alguien accediera a la tabla no vería contraseñas en texto plano.
+Políticas en `supabase/migrations/20261001000001_auth_fase_a.sql`, todas
+para el rol `authenticated` y basadas en `public.app_rol()` /
+`public.app_comision()` (leen el JWT):
+
+| Tabla | Leer | Escribir |
+|---|---|---|
+| `comisiones` | todos los roles | nadie (solo admin) |
+| `config_cortes` | todos | `subse` (update) |
+| `miembros`, `talleres`, `evaluaciones` | `subse`, `sg`: todo · `eyc`: su comisión | igual que leer (insert/update; delete solo en `talleres`) |
+| `cortes` | `subse`, `sg`: todo · `eyc`: su comisión | insert: `subse` · update: `subse`, `sg` |
+
+- `anon` (la llave pública) **no tiene acceso a ninguna tabla** después de
+  la fase B (`20261001000002_auth_fase_b.sql`), que además borra la función
+  `login()` y la tabla `usuarios` del esquema anterior. Lo único que `anon`
+  puede llamar es `keepalive()` (ver abajo).
+- Un `UPDATE`/`DELETE` que RLS no permite no da error en PostgREST: afecta
+  0 filas. `dataService` lo detecta (`conFilas_`) y lo reporta como fallo
+  de guardado, para que la UI nunca diga "guardado" sin que lo esté.
 - Los nombres y evaluaciones son datos reales de personas — tenerlo
   presente al decidir quién más tiene acceso de administrador a este
   proyecto de Supabase (un admin del proyecto ve todo, sin pasar por RLS).
+
+### Orden de despliegue (una sola vez)
+
+1. Aplicar la **fase A** (aditiva: el sitio publicado sigue andando con
+   las políticas viejas de `anon`).
+2. Correr `crear_cuentas.sql` y guardar las contraseñas temporales.
+3. Probar el código nuevo en local (`python3 -m http.server`) contra la
+   base real, con una cuenta de cada rol.
+4. Mergear a `main` (GitHub Pages publica en ~1 min).
+5. Aplicar la **fase B**. Desde acá el sitio viejo ya no puede leer nada.
+6. Repartir las contraseñas temporales por un canal privado.
 
 ## Que no se pause por inactividad
 
